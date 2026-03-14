@@ -1,0 +1,8 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="tests/NotepadTests.vcxproj" Id="66e62159-dea5-488b-9354-ccd594b7f95e" />
+  <Project Path="src/src.vcxproj" Id="2a59fd0a-11c8-4aef-8637-172a51274d61" />
+</Solution>

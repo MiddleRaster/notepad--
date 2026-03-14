@@ -1,0 +1,95 @@
+﻿#pragma once
+
+#include <windows.h>
+#include "..\src\Resource.h"
+
+namespace
+{
+    using namespace TDD20;
+
+    std::wstring GetModuleDirectory()
+    {
+        std::wstring path(MAX_PATH, L'\0');
+        DWORD len = GetModuleFileNameW(nullptr, path.data(), static_cast<DWORD>(path.size()));
+        while (len == path.size())
+        {
+            path.resize(path.size() * 2, L'\0');
+            len = GetModuleFileNameW(nullptr, path.data(), static_cast<DWORD>(path.size()));
+        }
+        path.resize(len);
+        std::filesystem::path p(path);
+        return p.parent_path().wstring();
+    }
+
+    std::wstring GetNotepadExePath()
+    {   // tests.exe lives alongside Notepad--.exe under <repo>\x64\<config>
+        std::filesystem::path p(GetModuleDirectory());
+        p /= L"Notepad--.exe";
+        return p.wstring();
+    }
+
+    HWND FindMainWindowForProcess(DWORD pid)
+    {
+        struct Finder
+        {
+            DWORD pid;
+            HWND hwnd{nullptr};
+            static BOOL CALLBACK EnumProc(HWND hWnd, LPARAM lParam)
+            {
+                auto* self = reinterpret_cast<Finder*>(lParam);
+                DWORD windowPid = 0;
+                GetWindowThreadProcessId(hWnd, &windowPid);
+                if (windowPid != self->pid)
+                    return TRUE;
+                if (!IsWindowVisible(hWnd))
+                    return TRUE;
+                if (GetWindow(hWnd, GW_OWNER) != nullptr)
+                    return TRUE;
+                self->hwnd = hWnd;
+                return FALSE;
+            }
+        } finder{pid};
+
+        EnumWindows(Finder::EnumProc, reinterpret_cast<LPARAM>(&finder));
+        return finder.hwnd;
+    }
+
+    HWND WaitForMainWindow(DWORD pid, std::chrono::milliseconds timeout)
+    {
+        const auto deadline = std::chrono::steady_clock::now() + timeout;
+        HWND hwnd = nullptr;
+        while (std::chrono::steady_clock::now() < deadline)
+        {
+            hwnd = FindMainWindowForProcess(pid);
+            if (hwnd != nullptr)
+                break;
+            std::this_thread::sleep_for(std::chrono::milliseconds{50});
+        }
+        return hwnd;
+    }
+
+    void TriggerExitViaPopupMenu(HWND hwnd)
+    {
+        HMENU menu = GetMenu(hwnd);
+        Assert::IsTrue(menu != nullptr, "Menu handle was null");
+        if (menu == nullptr)
+            return;
+
+        HMENU fileMenu = GetSubMenu(menu, 0);
+        Assert::IsTrue(fileMenu != nullptr, "File menu handle was null");
+        if (fileMenu == nullptr)
+            return;
+
+        RECT itemRect{};
+        Assert::IsTrue(GetMenuItemRect(hwnd, menu, 0, &itemRect) != 0, "Failed to get menu item rect");
+
+        std::thread invokeThread([&]()
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds{100});
+            PostMessageW(hwnd, WM_COMMAND, IDM_EXIT, 0);
+        });
+
+        TrackPopupMenu(fileMenu, TPM_LEFTALIGN | TPM_TOPALIGN, itemRect.left, itemRect.bottom, 0, hwnd, nullptr);
+        invokeThread.join();
+    }
+}
