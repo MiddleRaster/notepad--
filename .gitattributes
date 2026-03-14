@@ -61,3 +61,16 @@
 #*.PDF   diff=astextplain
 #*.rtf   diff=astextplain
 #*.RTF   diff=astextplain
+
+###############################################################################
+# Enforce CRLF for Windows/VS-friendly text files
+###############################################################################
+*.cpp              text eol=crlf
+*.h                text eol=crlf
+*.ixx              text eol=crlf
+*.rc               text eol=crlf
+*.vcxproj          text eol=crlf
+*.vcxproj.filters  text eol=crlf
+*.vcxproj.user     text eol=crlf
+*.slnx             text eol=crlf
+*.md               text eol=crlf
