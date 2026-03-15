@@ -1,5 +1,4 @@
 #include <windows.h>
-#include <commdlg.h>
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -8,51 +7,23 @@
 
 #define MAX_LOADSTRING 100
 
-INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    UNREFERENCED_PARAMETER(lParam);
-    switch (message)
-    {
-    case WM_INITDIALOG:
-        return (INT_PTR)TRUE;
-
-    case WM_COMMAND:
-        if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
-        {
-            EndDialog(hDlg, LOWORD(wParam));
-            return (INT_PTR)TRUE;
-        }
-        break;
-    }
-    return (INT_PTR)FALSE;
-}
-
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
-    case WM_CREATE:     return MessageHandler::CreateHandlerAndWindow(hWnd);
-    case WM_NCDESTROY:         MessageHandler::DestroyHandler(hWnd);                                            break;
-    case WM_SIZE:              MessageHandler::GetHandler(hWnd).Handle_WM_SIZE(LOWORD(lParam), HIWORD(lParam)); break;
+    case WM_CREATE: return MessageHandler::CreateHandlerAndWindow(hWnd);
+    case WM_NCDESTROY:     MessageHandler::DestroyHandler(hWnd);                                            break;
+    case WM_SIZE:          MessageHandler::GetHandler(hWnd).Handle_WM_SIZE(LOWORD(lParam), HIWORD(lParam)); break;
     case WM_COMMAND:
         switch (LOWORD(wParam))
         {   // Parse the menu selections:
-        case IDM_SAVEAS:
-            MessageHandler::GetHandler(hWnd).Handle_SaveAs(hWnd);
-            break;
-        case IDM_ABOUT:
-            DialogBox(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-            break;
-        case IDM_EXIT:
-            DestroyWindow(hWnd);
-            break;
-        default:
-            return DefWindowProc(hWnd, message, wParam, lParam);
+        case IDM_SAVEAS:   MessageHandler::GetHandler(hWnd).Handle_SaveAs(hWnd);    break;
+        case IDM_ABOUT:    MessageHandler::GetHandler(hWnd).Handle_About(hWnd);     break;
+        case IDM_EXIT:     DestroyWindow(hWnd);                                     break;
+        default:           return DefWindowProc(hWnd, message, wParam, lParam);
         }
         break;
-    case WM_DESTROY:
-        PostQuitMessage(0);
-        break;
+    case WM_DESTROY:       PostQuitMessage(0);                                      break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
     }

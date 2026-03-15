@@ -4,6 +4,9 @@
 #include <string>
 #include <vector>
 #include <windows.h>
+#include <commdlg.h>
+
+#include "Resource.h"
 
 class MessageHandler
 {
@@ -41,10 +44,12 @@ class MessageHandler
         if (edit == nullptr)
         {
             MessageBoxW(hWnd, L"Failed to create edit control. The application will now exit.", L"Notepad--", MB_OK | MB_ICONERROR);
+            delete this;
+            SetWindowLongPtrW(hWnd, GWLP_USERDATA, 0);
             return -1;
         }
         SetWindowLongPtrW(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
-        return S_OK;
+        return 0;
     }
     void Handle_WM_NCDESTROY(HWND hWnd)
     {
@@ -56,6 +61,8 @@ public:
     static MessageHandler& GetHandler(HWND hWnd) { return *reinterpret_cast<MessageHandler*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA)); }
     static int CreateHandlerAndWindow(HWND hWnd)
     {
+        if (GetWindowLongPtrW(hWnd, GWLP_USERDATA) != LONG_PTR(0))
+            return 0;
         auto* This = new MessageHandler();
         return This->Handle_WM_CREATE(hWnd);
     }
@@ -87,5 +94,14 @@ public:
             if (!title.empty())
                 SetWindowTextW(hWnd, title.c_str());
         }
+    }
+    void Handle_About(HWND hWnd)
+    {
+        DialogBox(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, [](HWND hDlg, UINT message, WPARAM wParam, LPARAM /*lParam*/) -> INT_PTR
+            {
+                if (message == WM_INITDIALOG) return (INT_PTR)TRUE;
+                if (message == WM_COMMAND && LOWORD(wParam) == IDOK) return (INT_PTR)!!EndDialog(hDlg, LOWORD(wParam));
+                return (INT_PTR)FALSE;
+            });
     }
 };
