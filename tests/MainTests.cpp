@@ -62,6 +62,21 @@ VsTest MainTests[] = {
             Assert::AreEqual(WAIT_OBJECT_0, WaitForSingleObject(proc.hProcess, 5000), "Notepad-- did not exit after menu selection");
         }
     },
+    { std::string{"Upon launch title bar says Untitled"}, []()
+        {
+            ProcessGuard proc([&](PROCESS_INFORMATION& pi) { return LaunchNotepadAndWait(pi); });
+            Assert::IsTrue(proc.created, "Failed to launch Notepad--.exe");
+            HWND hwnd = WaitForMainWindow(GetProcessId(proc.hProcess), 5s);
+            Assert::AreNotEqual(nullptr, hwnd, "Main window did not appear");
+
+            wchar_t title[256]{};
+            Assert::IsTrue(GetWindowTextW(hwnd, title, static_cast<int>(std::size(title))) > 0, "Failed to read window title");
+            Assert::AreEqual(std::wstring(L"Untitled"), std::wstring(title), "Unexpected window title");
+
+            TriggerExitViaPopupMenu(hwnd);
+            Assert::AreEqual(WAIT_OBJECT_0, WaitForSingleObject(proc.hProcess, 5000), "Notepad-- did not exit after menu selection");
+        }
+    },
 };
 
 VsTest EditFieldTests[] = {
@@ -124,8 +139,16 @@ VsTest EditFieldTests[] = {
                 std::this_thread::sleep_for(50ms);
             Assert::IsTrue(std::filesystem::exists(filePath), "Save As did not create the file");
 
-            std::ifstream in(filePath, std::ios::binary);
-            Assert::IsTrue(in.good(), "Failed to open saved file");
+            std::ifstream in;
+            for (int i=0; i<20; ++i)
+            {
+                in.open(filePath, std::ios::binary);
+                if (!in.is_open())
+                    std::this_thread::sleep_for(50ms);
+                else
+                    break;
+            }
+            Assert::IsTrue(in.is_open(), "Failed to open saved file");
             std::string bytes((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
             in.close();
             if (bytes.size() >= 3 && static_cast<unsigned char>(bytes[0]) == 0xEF && static_cast<unsigned char>(bytes[1]) == 0xBB && static_cast<unsigned char>(bytes[2]) == 0xBF)
@@ -136,6 +159,10 @@ VsTest EditFieldTests[] = {
             std::wstring wide(static_cast<size_t>(wideSize), L'\0');
             MultiByteToWideChar(CP_UTF8, 0, bytes.data(), static_cast<int>(bytes.size()), wide.data(), wideSize);
             Assert::AreEqual(std::wstring(text), wide, "Save As file contents mismatch");
+
+            wchar_t title[256]{};
+            Assert::IsTrue(GetWindowTextW(hwnd, title, static_cast<int>(std::size(title))) > 0, "Failed to read window title");
+            Assert::AreEqual(std::wstring(L"notepad--test.txt"), std::wstring(title), "Unexpected window title after Save As");
 
             CloseAppViaFileExit(hwnd, proc.hProcess);
 

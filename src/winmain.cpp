@@ -1,5 +1,6 @@
 #include <windows.h>
 #include <commdlg.h>
+#include <filesystem>
 #include <string>
 #include <vector>
 #include "Resource.h"
@@ -49,7 +50,12 @@ static void DoSaveAs(HWND hWnd)
     ofn.Flags        = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST;
 
     if (GetSaveFileNameW(&ofn))
+    {
         SaveEditTextToFile(hWnd, filePath);
+        std::wstring title = std::filesystem::path{filePath}.filename().wstring();
+        if (!title.empty())
+            SetWindowTextW(hWnd, title.c_str());
+    }
 }
 
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow, const WCHAR* szWindowClass, const WCHAR* szTitle)
