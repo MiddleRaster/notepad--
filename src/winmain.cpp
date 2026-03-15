@@ -37,21 +37,31 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
-        case WM_COMMAND:
+    case WM_CREATE:
         {
-            int wmId = LOWORD(wParam);
-            // Parse the menu selections:
-            switch (wmId)
-            {
-            case IDM_ABOUT:
-                DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-                break;
-            case IDM_EXIT:
-                DestroyWindow(hWnd);
-                break;
-            default:
-                return DefWindowProc(hWnd, message, wParam, lParam);
-            }
+            HWND edit = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"",WS_CHILD|WS_VISIBLE|WS_VSCROLL|WS_HSCROLL|ES_LEFT|ES_MULTILINE|ES_AUTOVSCROLL|ES_AUTOHSCROLL, 0,0,0,0, hWnd, nullptr, GetModuleHandle(nullptr), nullptr);
+            SetWindowLongPtrW(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(edit));
+        }
+        break;
+    case WM_SIZE:
+        {
+            HWND edit = reinterpret_cast<HWND>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
+            if (edit != nullptr)
+                MoveWindow(edit, 0, 0, LOWORD(lParam), HIWORD(lParam), TRUE);
+        }
+        break;
+    case WM_COMMAND:
+        // Parse the menu selections:
+        switch (LOWORD(wParam))
+        {
+        case IDM_ABOUT:
+            DialogBox(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+            break;
+        case IDM_EXIT:
+            DestroyWindow(hWnd);
+            break;
+        default:
+            return DefWindowProc(hWnd, message, wParam, lParam);
         }
         break;
     case WM_PAINT:

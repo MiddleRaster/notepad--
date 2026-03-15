@@ -92,4 +92,13 @@ namespace
         TrackPopupMenu(fileMenu, TPM_LEFTALIGN | TPM_TOPALIGN, itemRect.left, itemRect.bottom, 0, hwnd, nullptr);
         invokeThread.join();
     }
+
+    void CloseAppViaFileExit(HWND hwnd, HANDLE process)
+    {
+        HMENU menu = GetMenu(hwnd);
+        Assert::IsTrue(menu != nullptr, "Menu handle was null");
+        SendMessageW(hwnd, WM_INITMENU, reinterpret_cast<WPARAM>(menu), 0);
+        SendMessageW(hwnd, WM_COMMAND, IDM_EXIT, 0);
+        Assert::AreEqual(WAIT_OBJECT_0, WaitForSingleObject(process, 5000), "Notepad-- did not exit after IDM_EXIT");
+    }
 }
