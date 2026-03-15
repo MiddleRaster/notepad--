@@ -130,6 +130,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="MessageHandler.h" />
     <ClInclude Include="Resource.h" />
   </ItemGroup>
   <ItemGroup>
