@@ -12,17 +12,17 @@ export namespace TDD20
     template<typename T>            inline std::string ToString(                 T* t) { return std::format("0x{:X}", reinterpret_cast<std::uintptr_t>(t)); } // generic pointer converted to hex string
     template<std::integral       T> inline std::string ToString(const            T& t) { return std::to_string(t); }
     template<std::floating_point T> inline std::string ToString(const            T& t) { return std::format("{:.15f}", t); } // 15 digits of precision
-                                    inline std::string ToString(const         bool& t) { return t ? "true" : "false"; }    // an overload, not a specialization
-    template <>                        inline std::string ToString(const  std::string& t) { return t; }
-    template <>                        inline std::string ToString(const         char* t) { return std::string(t); }
-    template <>                        inline std::string ToString(const std::wstring& t)
+                                    inline std::string ToString(const         bool& t) { return t ? "true" : "false"; }      // an overload, not a specialization
+    template <>                     inline std::string ToString(const  std::string& t) { return t; }
+    template <>                     inline std::string ToString(const         char* t) { return std::string(t); }
+    template <>                     inline std::string ToString(const std::wstring& t)
     {
         std::string s;
         for (wchar_t wc : t)
             s += static_cast<char>(wc); // lossy:  drops high bits
         return s;
     }
-    template <>                        inline std::string ToString(const      wchar_t* t) { return ToString(std::wstring(t)); }
+    template <>                     inline std::string ToString(const      wchar_t* t) { return ToString(std::wstring(t)); }
 
     struct AssertException : public std::exception
     {

@@ -101,4 +101,21 @@ namespace
         SendMessageW(hwnd, WM_COMMAND, IDM_EXIT, 0);
         Assert::AreEqual(WAIT_OBJECT_0, WaitForSingleObject(process, 5000), "Notepad-- did not exit after IDM_EXIT");
     }
+
+    bool LaunchNotepadAndWait(PROCESS_INFORMATION& pi)
+    {
+        const std::wstring exePath = GetNotepadExePath();
+        Assert::IsTrue(std::filesystem::exists(exePath), "Notepad--.exe not found");
+
+        STARTUPINFOW si{};
+        si.cb = sizeof(si);
+        std::wstring cmdLine = L"\"" + exePath + L"\"";
+        const bool created = CreateProcessW(exePath.c_str(), cmdLine.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi) != FALSE;
+        Assert::IsTrue(created, "Failed to launch Notepad--.exe");
+
+        if (created)
+            WaitForInputIdle(pi.hProcess, 5000);
+
+        return created;
+    }
 }
