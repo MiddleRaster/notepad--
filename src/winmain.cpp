@@ -11,7 +11,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
-    case WM_CREATE: return MessageHandler::CreateHandlerAndWindow(hWnd);
+    case WM_CREATE: return MessageHandler::CreateHandlerAndEditWindow(hWnd);
     case WM_NCDESTROY:     MessageHandler::DestroyHandler(hWnd);                                            break;
     case WM_SIZE:          MessageHandler::GetHandler(hWnd).Handle_WM_SIZE(LOWORD(lParam), HIWORD(lParam)); break;
     case WM_COMMAND:

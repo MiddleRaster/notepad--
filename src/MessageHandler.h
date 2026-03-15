@@ -59,7 +59,7 @@ class MessageHandler
 
 public:
     static MessageHandler& GetHandler(HWND hWnd) { return *reinterpret_cast<MessageHandler*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA)); }
-    static int CreateHandlerAndWindow(HWND hWnd)
+    static int CreateHandlerAndEditWindow(HWND hWnd)
     {
         if (GetWindowLongPtrW(hWnd, GWLP_USERDATA) != LONG_PTR(0))
             return 0;
