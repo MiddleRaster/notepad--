@@ -1,5 +1,8 @@
 #pragma once
 
+#include <filesystem>
+#include <string>
+#include <vector>
 #include <windows.h>
 
 class MessageHandler
@@ -14,8 +17,8 @@ class MessageHandler
         text.resize(static_cast<size_t>(length));
 
         const int utf8Size = WideCharToMultiByte(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), nullptr, 0, nullptr, nullptr);
-        if (utf8Size < 0)
-            return;
+        if (utf8Size == 0)
+            return; // TODO: BUGBUG: report error to user?
 
         std::vector<char> utf8(static_cast<size_t>(utf8Size) + 3);
         utf8[0] = static_cast<char>(0xEF);
@@ -32,18 +35,35 @@ class MessageHandler
         CloseHandle(file);
     }
 
-public:
-    static MessageHandler& GetHandler(HWND hWnd) { return *reinterpret_cast<MessageHandler*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA)); }
-
-    void Handle_WM_CREATE(HWND hWnd)
+    int Handle_WM_CREATE(HWND hWnd)
     {
         edit = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL, 0, 0, 0, 0, hWnd, nullptr, GetModuleHandle(nullptr), nullptr);
+        if (edit == nullptr)
+        {
+            MessageBoxW(hWnd, L"Failed to create edit control. The application will now exit.", L"Notepad--", MB_OK | MB_ICONERROR);
+            return -1;
+        }
         SetWindowLongPtrW(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+        return S_OK;
     }
     void Handle_WM_NCDESTROY(HWND hWnd)
     {
         SetWindowLongPtrW(hWnd, GWLP_USERDATA, 0);
         delete this;
+    }
+
+public:
+    static MessageHandler& GetHandler(HWND hWnd) { return *reinterpret_cast<MessageHandler*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA)); }
+    static int CreateHandlerAndWindow(HWND hWnd)
+    {
+        auto* This = new MessageHandler();
+        return This->Handle_WM_CREATE(hWnd);
+    }
+    static void DestroyHandler(HWND hWnd)
+    {
+        auto* This = reinterpret_cast<MessageHandler*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
+        if (This != nullptr)
+            This->Handle_WM_NCDESTROY(hWnd);
     }
 
     void Handle_WM_SIZE(int width, int height) { MoveWindow(edit, 0, 0, width, height, TRUE); }
