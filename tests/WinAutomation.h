@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <windows.h>
 #include "..\src\Resource.h"
@@ -6,6 +6,33 @@
 namespace
 {
     using namespace TDD20;
+
+    class ProcessGuard
+    {
+        ProcessGuard           (                    ) = delete;
+        ProcessGuard           (const ProcessGuard& ) = delete;
+        ProcessGuard& operator=(const ProcessGuard& ) = delete;
+        ProcessGuard           (      ProcessGuard&&) = delete;
+        ProcessGuard& operator=(      ProcessGuard&&) = delete;
+
+        PROCESS_INFORMATION pi{};
+    public:
+        const HANDLE& hProcess;
+        const HANDLE& hThread;
+        const bool created;
+
+        template <typename LaunchFn> explicit ProcessGuard(LaunchFn&& launch) : hProcess(pi.hProcess), hThread(pi.hThread), created(launch(pi)) {}
+       ~ProcessGuard()
+        {
+            if (created)
+                if (WaitForSingleObject(hProcess, 1000) == WAIT_TIMEOUT)
+                    TerminateProcess(hProcess, 1);
+            if (hThread)
+                CloseHandle(hThread);
+            if (hProcess)
+                CloseHandle(hProcess);
+        }
+    };
 
     std::wstring GetModuleDirectory()
     {
@@ -125,6 +152,30 @@ namespace
         {
             DWORD pid;
             HWND hwnd{nullptr};
+            static bool HasChildClass(HWND root, const wchar_t* className)
+            {
+                struct ChildFinder
+                {
+                    const wchar_t* className;
+                    bool found{false};
+                    static BOOL CALLBACK EnumProc(HWND hWnd, LPARAM lParam)
+                    {
+                        auto* self = reinterpret_cast<ChildFinder*>(lParam);
+                        wchar_t cls[64]{};
+                        if (GetClassNameW(hWnd, cls, static_cast<int>(std::size(cls))) != 0)
+                        {
+                            if (std::wcscmp(cls, self->className) == 0)
+                            {
+                                self->found = true;
+                                return FALSE;
+                            }
+                        }
+                        return TRUE;
+                    }
+                } finder{className};
+                EnumChildWindows(root, ChildFinder::EnumProc, reinterpret_cast<LPARAM>(&finder));
+                return finder.found;
+            }
             static BOOL CALLBACK EnumProc(HWND hWnd, LPARAM lParam)
             {
                 auto* self = reinterpret_cast<Finder*>(lParam);
@@ -136,6 +187,8 @@ namespace
                 if (GetClassNameW(hWnd, className, static_cast<int>(std::size(className))) == 0)
                     return TRUE;
                 if (std::wcscmp(className, L"#32770") != 0)
+                    return TRUE;
+                if (!HasChildClass(hWnd, L"DUIViewWndClassName") && !HasChildClass(hWnd, L"DirectUIHWND"))
                     return TRUE;
                 self->hwnd = hWnd;
                 return FALSE;
@@ -161,6 +214,23 @@ namespace
 
     HWND FindSaveAsEdit(HWND dlg)
     {
+        auto FindDescendantByClass = [](HWND root, const wchar_t* className, const auto& self) -> HWND
+        {
+            HWND child = nullptr;
+            while ((child = FindWindowExW(root, child, nullptr, nullptr)) != nullptr)
+            {
+                wchar_t cls[64]{};
+                if (GetClassNameW(child, cls, static_cast<int>(std::size(cls))) != 0)
+                {
+                    if (std::wcscmp(cls, className) == 0)
+                        return child;
+                }
+                if (HWND found = self(child, className, self))
+                    return found;
+            }
+            return nullptr;
+        };
+
         HWND duiview = FindWindowExW(dlg, nullptr, L"DUIViewWndClassName", nullptr);
         if (duiview != nullptr)
         {
@@ -172,11 +242,14 @@ namespace
                 {
                     HWND combo = FindWindowExW(sink, nullptr, L"ComboBox", nullptr);
                     if (combo != nullptr)
-                        return FindWindowExW(combo, nullptr, L"Edit", nullptr);
+                    {
+                        if (HWND edit = FindWindowExW(combo, nullptr, L"Edit", nullptr))
+                            return edit;
+                    }
                 }
             }
         }
-        return nullptr;
+        return FindDescendantByClass(dlg, L"Edit", FindDescendantByClass);
     }
 
     HWND WaitForSaveAsEdit(HWND dlg, std::chrono::milliseconds timeout)

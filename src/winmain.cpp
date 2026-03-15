@@ -19,7 +19,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {   // Parse the menu selections:
         case IDM_SAVEAS:   MessageHandler::GetHandler(hWnd).Handle_SaveAs(hWnd);    break;
         case IDM_ABOUT:    MessageHandler::GetHandler(hWnd).Handle_About(hWnd);     break;
-        case IDM_EXIT:     DestroyWindow(hWnd);                                     break;
+        case IDM_EXIT:     MessageHandler::GetHandler(hWnd).Handle_Exit(hWnd);      break;
         default:           return DefWindowProc(hWnd, message, wParam, lParam);
         }
         break;

@@ -13,36 +13,6 @@ namespace TDD20
     template <> inline std::string ToString(const std::nullptr_t&) { return "0x0"; }
 }
 
-namespace
-{
-    class ProcessGuard
-    {
-        ProcessGuard           (                    ) = delete;
-        ProcessGuard           (const ProcessGuard& ) = delete;
-        ProcessGuard& operator=(const ProcessGuard& ) = delete;
-        ProcessGuard           (      ProcessGuard&&) = delete;
-        ProcessGuard& operator=(      ProcessGuard&&) = delete;
-
-        PROCESS_INFORMATION pi{};
-    public:
-        const HANDLE& hProcess;
-        const HANDLE& hThread;
-        const bool created;
-
-        template <typename LaunchFn> explicit ProcessGuard(LaunchFn&& launch) : hProcess(pi.hProcess), hThread(pi.hThread), created(launch(pi)) {}
-       ~ProcessGuard()
-        {
-            if (created)
-                if (WaitForSingleObject(hProcess, 1000) == WAIT_TIMEOUT)
-                    TerminateProcess(hProcess, 1);
-            if (hThread)
-                CloseHandle(hThread);
-            if (hProcess)
-                CloseHandle(hProcess);
-        }
-    };
-}
-
 VsTest MainTests[] = {
     { std::string("Launch and Exit Notepad--"), []()
         {
@@ -170,4 +140,3 @@ VsTest EditFieldTests[] = {
         }
     },
 };
-

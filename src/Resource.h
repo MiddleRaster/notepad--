@@ -7,6 +7,7 @@
 #define IDR_MAINFRAME           128
 #define IDD_NOTEPAD_DIALOG      102
 #define IDD_ABOUTBOX            103
+#define IDD_EXITCONFIRM         110
 #define IDM_ABOUT               104
 #define IDM_EXIT                105
 #define IDM_SAVEAS              106
@@ -14,6 +15,8 @@
 #define IDI_NOTEPAD             107
 #define IDI_SMALL_NOTEPAD       108
 #define IDC_NOTEPAD             109
+#define IDC_SAVE               1001
+#define IDC_DONTSAVE           1002
 #define IDC_MYICON              2
 #ifndef IDC_STATIC
 #define IDC_STATIC             -1

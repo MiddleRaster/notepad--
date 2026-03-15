@@ -95,6 +95,44 @@ public:
                 SetWindowTextW(hWnd, title.c_str());
         }
     }
+    void Handle_Exit(HWND hWnd)
+    {
+        if (SendMessageW(edit, EM_GETMODIFY, 0, 0) == 0)
+        {
+            DestroyWindow(hWnd);
+            return;
+        }
+
+        const INT_PTR choice = DialogBox(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDD_EXITCONFIRM), hWnd, [](HWND hDlg, UINT message, WPARAM wParam, LPARAM /*lParam*/) -> INT_PTR
+            {
+                if (message == WM_INITDIALOG) return (INT_PTR)TRUE;
+                if (message == WM_COMMAND)
+                {
+                    switch (LOWORD(wParam))
+                    {
+                    case IDC_SAVE:
+                    case IDC_DONTSAVE:
+                    case IDCANCEL:
+                        EndDialog(hDlg, LOWORD(wParam));
+                        return (INT_PTR)TRUE;
+                    }
+                }
+                return (INT_PTR)FALSE;
+            });
+
+        switch (choice)
+        {
+        case IDC_SAVE:
+            Handle_SaveAs(hWnd);
+            DestroyWindow(hWnd);
+            break;
+        case IDC_DONTSAVE:
+            DestroyWindow(hWnd);
+            break;
+        default:
+            break;
+        }
+    }
     void Handle_About(HWND hWnd)
     {
         DialogBox(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, [](HWND hDlg, UINT message, WPARAM wParam, LPARAM /*lParam*/) -> INT_PTR
