@@ -118,4 +118,78 @@ namespace
 
         return created;
     }
+
+    HWND FindSaveAsDialog(DWORD pid)
+    {
+        struct Finder
+        {
+            DWORD pid;
+            HWND hwnd{nullptr};
+            static BOOL CALLBACK EnumProc(HWND hWnd, LPARAM lParam)
+            {
+                auto* self = reinterpret_cast<Finder*>(lParam);
+                DWORD windowPid = 0;
+                GetWindowThreadProcessId(hWnd, &windowPid);
+                if (windowPid != self->pid)
+                    return TRUE;
+                wchar_t className[64]{};
+                if (GetClassNameW(hWnd, className, static_cast<int>(std::size(className))) == 0)
+                    return TRUE;
+                if (std::wcscmp(className, L"#32770") != 0)
+                    return TRUE;
+                self->hwnd = hWnd;
+                return FALSE;
+            }
+        } finder{pid};
+        EnumWindows(Finder::EnumProc, reinterpret_cast<LPARAM>(&finder));
+        return finder.hwnd;
+    }
+
+    HWND WaitForSaveAsDialog(DWORD pid, std::chrono::milliseconds timeout)
+    {
+        const auto deadline = std::chrono::steady_clock::now() + timeout;
+        HWND dlg = nullptr;
+        while (std::chrono::steady_clock::now() < deadline)
+        {
+            dlg = FindSaveAsDialog(pid);
+            if (dlg != nullptr)
+                break;
+            std::this_thread::sleep_for(std::chrono::milliseconds{50});
+        }
+        return dlg;
+    }
+
+    HWND FindSaveAsEdit(HWND dlg)
+    {
+        HWND duiview = FindWindowExW(dlg, nullptr, L"DUIViewWndClassName", nullptr);
+        if (duiview != nullptr)
+        {
+            HWND directUI = FindWindowExW(duiview, nullptr, L"DirectUIHWND", nullptr);
+            if (directUI != nullptr)
+            {
+                HWND sink = FindWindowExW(directUI, nullptr, L"FloatNotifySink", nullptr);
+                if (sink != nullptr)
+                {
+                    HWND combo = FindWindowExW(sink, nullptr, L"ComboBox", nullptr);
+                    if (combo != nullptr)
+                        return FindWindowExW(combo, nullptr, L"Edit", nullptr);
+                }
+            }
+        }
+        return nullptr;
+    }
+
+    HWND WaitForSaveAsEdit(HWND dlg, std::chrono::milliseconds timeout)
+    {
+        const auto deadline = std::chrono::steady_clock::now() + timeout;
+        HWND edit = nullptr;
+        while (std::chrono::steady_clock::now() < deadline)
+        {
+            edit = FindSaveAsEdit(dlg);
+            if (edit != nullptr)
+                break;
+            std::this_thread::sleep_for(std::chrono::milliseconds{50});
+        }
+        return edit;
+    }
 }
