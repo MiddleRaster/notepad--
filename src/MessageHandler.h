@@ -19,7 +19,7 @@ class MessageHandler
         if (file != INVALID_HANDLE_VALUE)
         {
             LARGE_INTEGER size{};
-            if (GetFileSizeEx(file, &size) != 0 && size.QuadPart > 0 && size.QuadPart <= INT_MAX)
+            if (GetFileSizeEx(file, &size) != 0 && size.QuadPart >= 0 && size.QuadPart <= INT_MAX)
             {
                 std::vector<char> bytes(static_cast<size_t>(size.QuadPart));
                 DWORD read = 0;
@@ -53,16 +53,15 @@ class MessageHandler
         return false;
     }
 
-    void SaveEditTextToFile(HWND hWnd, const wchar_t* path)
+    bool SaveEditTextToFile(HWND hWnd, const wchar_t* path)
     {
         const LRESULT length = SendMessageW(edit, WM_GETTEXTLENGTH, 0, 0);
         std::wstring text(static_cast<size_t>(length) + 1, L'\0');
         SendMessageW(edit, WM_GETTEXT, static_cast<WPARAM>(text.size()), reinterpret_cast<LPARAM>(text.data()));
         text.resize(static_cast<size_t>(length));
-
         const int utf8Size = WideCharToMultiByte(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), nullptr, 0, nullptr, nullptr);
         if (utf8Size == 0)
-            return; // TODO: BUGBUG: report error to user?
+            return false;
 
         std::vector<char> utf8(static_cast<size_t>(utf8Size) + 3);
         utf8[0] = static_cast<char>(0xEF);
@@ -70,13 +69,17 @@ class MessageHandler
         utf8[2] = static_cast<char>(0xBF);
         WideCharToMultiByte(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), utf8.data() + 3, utf8Size, nullptr, nullptr);
 
+        bool ret = false;
         HANDLE file = CreateFileW(path, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-        if (file == INVALID_HANDLE_VALUE)
-            return; // TODO: BUGBUG: report error to user
-
-        DWORD written = 0;
-        WriteFile(file, utf8.data(), static_cast<DWORD>(utf8.size()), &written, nullptr);
-        CloseHandle(file);
+        if (file != INVALID_HANDLE_VALUE)
+        {
+            DWORD written = 0;
+            if (WriteFile(file, utf8.data(), static_cast<DWORD>(utf8.size()), &written, nullptr) != 0)
+                if (written == utf8.size())
+                    ret = true;
+            CloseHandle(file);
+        }
+        return ret;
     }
 
     int Handle_WM_CREATE(HWND hWnd)
@@ -146,10 +149,14 @@ public:
 
         if (GetSaveFileNameW(&ofn))
         {
-            SaveEditTextToFile(hWnd, filePath);
-            std::wstring title = std::filesystem::path{ filePath }.filename().wstring();
-            if (!title.empty())
-                SetWindowTextW(hWnd, title.c_str());
+            if (SaveEditTextToFile(hWnd, filePath))
+            {
+                std::wstring title = std::filesystem::path{ filePath }.filename().wstring();
+                if (!title.empty())
+                    SetWindowTextW(hWnd, title.c_str());
+            }
+            else
+                MessageBoxW(hWnd, L"Failed to save file.", L"Notepad--", MB_OK | MB_ICONERROR);
         }
     }
     void Handle_Exit(HWND hWnd)
