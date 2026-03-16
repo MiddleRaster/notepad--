@@ -1,4 +1,4 @@
-#include <windows.h>
+﻿#include <windows.h>
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -17,7 +17,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_COMMAND:
         switch (LOWORD(wParam))
         {   // Parse the menu selections:
-        case IDM_SAVEAS:   MessageHandler::GetHandler(hWnd).Handle_SaveAs(hWnd);    break;
+        case IDM_OPEN:     MessageHandler::GetHandler(hWnd).Handle_FileOpen(hWnd);  break;
+        case IDM_SAVEAS:   MessageHandler::GetHandler(hWnd).Handle_FileSaveAs(hWnd);break;
         case IDM_ABOUT:    MessageHandler::GetHandler(hWnd).Handle_About(hWnd);     break;
         case IDM_EXIT:     MessageHandler::GetHandler(hWnd).Handle_Exit(hWnd);      break;
         default:           return DefWindowProc(hWnd, message, wParam, lParam);

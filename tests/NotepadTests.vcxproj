@@ -145,6 +145,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="FileTests.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainTests.cpp" />
     <ClCompile Include="ExitTests.cpp" />

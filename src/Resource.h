@@ -1,4 +1,4 @@
-//{{NO_DEPENDENCIES}}
+﻿//{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
 // Used by Notepad--.rc
 
@@ -7,13 +7,16 @@
 #define IDR_MAINFRAME           128
 #define IDD_NOTEPAD_DIALOG      102
 #define IDD_ABOUTBOX            103
-#define IDD_EXITCONFIRM         110
-#define IDM_ABOUT               104
-#define IDM_EXIT                105
-#define IDM_SAVEAS              106
+#define IDD_EXITCONFIRM         104
 
-#define IDI_NOTEPAD             107
-#define IDI_SMALL_NOTEPAD       108
+#define IDM_ABOUT               110
+#define IDM_OPEN                111
+#define IDM_SAVEAS              112
+#define IDM_EXIT                113
+
+#define IDI_NOTEPAD             120
+#define IDI_SMALL_NOTEPAD       121
+
 #define IDC_NOTEPAD             109
 #define IDC_SAVE               1001
 #define IDC_DONTSAVE           1002

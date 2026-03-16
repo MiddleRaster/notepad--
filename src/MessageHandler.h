@@ -135,7 +135,7 @@ public:
 
     void Handle_WM_SIZE(int width, int height) { MoveWindow(edit, 0, 0, width, height, TRUE); }
 
-    void Handle_SaveAs(HWND hWnd)
+    void Handle_FileSaveAs(HWND hWnd)
     {
         wchar_t filePath[MAX_PATH] = L"";
         OPENFILENAMEW ofn{};
@@ -187,7 +187,7 @@ public:
         switch (choice)
         {
         case IDC_SAVE:
-            Handle_SaveAs(hWnd);
+            Handle_FileSaveAs(hWnd);
             DestroyWindow(hWnd);
             break;
         case IDC_DONTSAVE:
@@ -198,9 +198,22 @@ public:
         }
     }
 
-    void Handle_FileOpen(HWND /*hWnd*/)
+    void Handle_FileOpen(HWND hWnd)
     {
-        // TODO: file open dialog
+        wchar_t filePath[MAX_PATH] = L"";
+        OPENFILENAMEW ofn{};
+        ofn.lStructSize  = sizeof(ofn);
+        ofn.hwndOwner    = hWnd;
+        ofn.lpstrFile    = filePath;
+        ofn.nMaxFile     = MAX_PATH;
+        ofn.lpstrFilter  = L"Text Files (*.txt)\0*.txt\0All Files (*.*)\0*.*\0";
+        ofn.nFilterIndex = 1;
+        ofn.Flags        = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
+        if (GetOpenFileNameW(&ofn))
+        {
+            if (!LoadFileToEdit(hWnd, filePath))
+                MessageBoxW(hWnd, L"Failed to open file.", L"Notepad--", MB_OK | MB_ICONERROR);
+        }
     }
     void Handle_About(HWND hWnd)
     {

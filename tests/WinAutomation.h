@@ -236,6 +236,11 @@ namespace
         return dlg;
     }
 
+    HWND WaitForOpenFileDialog(DWORD pid, std::chrono::milliseconds timeout)
+    {
+        return WaitForSaveAsDialog(pid, timeout);
+    }
+
     HWND FindSaveAsEdit(HWND dlg)
     {
         auto FindDescendantByClass = [](HWND root, const wchar_t* className, const auto& self) -> HWND
@@ -283,6 +288,36 @@ namespace
         while (std::chrono::steady_clock::now() < deadline)
         {
             edit = FindSaveAsEdit(dlg);
+            if (edit != nullptr)
+                break;
+            std::this_thread::sleep_for(std::chrono::milliseconds{10});
+        }
+        return edit;
+    }
+
+    HWND FindOpenFileEdit(HWND dlg)
+    {
+        HWND comboEx = FindWindowExW(dlg, nullptr, L"ComboBoxEx32", nullptr);
+        if (comboEx != nullptr)
+        {
+            HWND combo = FindWindowExW(comboEx, nullptr, L"ComboBox", nullptr);
+            if (combo != nullptr)
+            {
+                HWND edit = FindWindowExW(combo, nullptr, L"Edit", nullptr);
+                if (edit != nullptr)
+                    return edit;
+            }
+        }
+        return FindSaveAsEdit(dlg);
+    }
+
+    HWND WaitForOpenFileEdit(HWND dlg, std::chrono::milliseconds timeout)
+    {
+        const auto deadline = std::chrono::steady_clock::now() + timeout;
+        HWND edit = nullptr;
+        while (std::chrono::steady_clock::now() < deadline)
+        {
+            edit = FindOpenFileEdit(dlg);
             if (edit != nullptr)
                 break;
             std::this_thread::sleep_for(std::chrono::milliseconds{10});
