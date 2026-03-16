@@ -146,6 +146,30 @@ namespace
         return created;
     }
 
+    bool LaunchNotepadWithArgsAndWait(PROCESS_INFORMATION& pi, const wchar_t* args)
+    {
+        const std::wstring exePath = GetNotepadExePath();
+        Assert::IsTrue(std::filesystem::exists(exePath), "Notepad--.exe not found");
+
+        STARTUPINFOW si{};
+        si.cb = sizeof(si);
+        std::wstring cmdLine = L"\"" + exePath + L"\"";
+        if (args != nullptr && args[0] != L'\0')
+        {
+            cmdLine += L" ";
+            cmdLine += L"\"";
+            cmdLine += args;
+            cmdLine += L"\"";
+        }
+        const bool created = CreateProcessW(exePath.c_str(), cmdLine.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi) != FALSE;
+        Assert::IsTrue(created, "Failed to launch Notepad--.exe");
+
+        if (created)
+            WaitForInputIdle(pi.hProcess, 5000);
+
+        return created;
+    }
+
     HWND FindSaveAsDialog(DWORD pid)
     {
         struct Finder
@@ -264,5 +288,37 @@ namespace
             std::this_thread::sleep_for(std::chrono::milliseconds{10});
         }
         return edit;
+    }
+
+    std::filesystem::path CreateTempUtf8File(const wchar_t* fileName, const wchar_t* text)
+    {
+        wchar_t tempPath[MAX_PATH]{};
+        Assert::IsTrue(GetTempPathW(MAX_PATH, tempPath) > 0, "Failed to get temp path");
+        std::filesystem::path filePath = std::filesystem::path(tempPath) / fileName;
+        DeleteFileW(filePath.c_str());
+
+        const int utf8Size = WideCharToMultiByte(CP_UTF8, 0, text, -1, nullptr, 0, nullptr, nullptr);
+        Assert::IsTrue(utf8Size > 0, "Failed to size UTF-8 buffer");
+        std::vector<char> utf8(static_cast<size_t>(utf8Size - 1) + 3);
+        utf8[0] = static_cast<char>(0xEF);
+        utf8[1] = static_cast<char>(0xBB);
+        utf8[2] = static_cast<char>(0xBF);
+        WideCharToMultiByte(CP_UTF8, 0, text, -1, utf8.data() + 3, utf8Size - 1, nullptr, nullptr);
+
+        HANDLE file = CreateFileW(filePath.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+        Assert::IsTrue(file != INVALID_HANDLE_VALUE, "Failed to create temp file");
+        DWORD written = 0;
+        WriteFile(file, utf8.data(), static_cast<DWORD>(utf8.size()), &written, nullptr);
+        CloseHandle(file);
+        return filePath;
+    }
+
+    std::wstring GetEditText(HWND edit)
+    {
+        const LRESULT length = SendMessageW(edit, WM_GETTEXTLENGTH, 0, 0);
+        std::wstring buffer(static_cast<size_t>(length) + 1, L'\0');
+        SendMessageW(edit, WM_GETTEXT, static_cast<WPARAM>(buffer.size()), reinterpret_cast<LPARAM>(buffer.data()));
+        buffer.resize(static_cast<size_t>(length));
+        return buffer;
     }
 }

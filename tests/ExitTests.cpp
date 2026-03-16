@@ -238,11 +238,7 @@ VsTest ExitTests[] = {
 
             HWND edit = FindWindowExW(hwnd, nullptr, L"Edit", nullptr);
             Assert::AreNotEqual(nullptr, edit, "Edit control not found");
-            const LRESULT length = SendMessageW(edit, WM_GETTEXTLENGTH, 0, 0);
-            std::wstring buffer(static_cast<size_t>(length) + 1, L'\0');
-            SendMessageW(edit, WM_GETTEXT, static_cast<WPARAM>(buffer.size()), reinterpret_cast<LPARAM>(buffer.data()));
-            buffer.resize(static_cast<size_t>(length));
-            Assert::AreEqual(std::wstring(text), buffer, "Edit text changed after Cancel");
+            Assert::AreEqual(std::wstring(text), GetEditText(edit), "Edit text changed after Cancel");
 
             Assert::AreEqual(nullptr, WaitForSaveAsDialog(GetProcessId(proc.hProcess), 200ms), "Save As dialog appeared after Cancel");
 

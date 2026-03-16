@@ -1,16 +1,57 @@
-#pragma once
+﻿#pragma once
 
 #include <filesystem>
 #include <string>
 #include <vector>
 #include <windows.h>
 #include <commdlg.h>
+#include <shellapi.h>
 
 #include "Resource.h"
 
 class MessageHandler
 {
     HWND edit{};
+
+    bool LoadFileToEdit(HWND hWnd, const wchar_t* path)
+    {
+        HANDLE file = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (file != INVALID_HANDLE_VALUE)
+        {
+            LARGE_INTEGER size{};
+            if (GetFileSizeEx(file, &size) != 0 && size.QuadPart > 0 && size.QuadPart <= INT_MAX)
+            {
+                std::vector<char> bytes(static_cast<size_t>(size.QuadPart));
+                DWORD read = 0;
+                if (ReadFile(file, bytes.data(), static_cast<DWORD>(bytes.size()), &read, nullptr) != 0)
+                {
+                    bytes.resize(read);
+                    size_t offset = 0;
+                    if (bytes.size() >= 3 && static_cast<unsigned char>(bytes[0]) == 0xEF && static_cast<unsigned char>(bytes[1]) == 0xBB && static_cast<unsigned char>(bytes[2]) == 0xBF)
+                        offset = 3;
+
+                    const int wideSize = MultiByteToWideChar(CP_UTF8, 0, bytes.data() + offset, static_cast<int>(bytes.size() - offset), nullptr, 0);
+                    if (wideSize != 0)
+                    {
+                        std::wstring wide(static_cast<size_t>(wideSize), L'\0');
+                        MultiByteToWideChar(CP_UTF8, 0, bytes.data() + offset, static_cast<int>(bytes.size() - offset), wide.data(), wideSize);
+                        if (SendMessageW(edit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(wide.c_str())) != 0)
+                        {
+                            SendMessageW(edit, EM_SETMODIFY, 0, 0);
+
+                            std::wstring title = std::filesystem::path{ path }.filename().wstring();
+                            if (!title.empty())
+                                SetWindowTextW(hWnd, title.c_str());
+                            CloseHandle(file);
+                            return true;
+                        }
+                    }
+                }
+            }
+            CloseHandle(file);
+        }
+        return false;
+    }
 
     void SaveEditTextToFile(HWND hWnd, const wchar_t* path)
     {
@@ -49,12 +90,28 @@ class MessageHandler
             return -1;
         }
         SetWindowLongPtrW(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+
+        // if there's a filename on the command-line, load it up
+        LoadCommandlineArgIfAny(hWnd);
         return 0;
     }
     void Handle_WM_NCDESTROY(HWND hWnd)
     {
         SetWindowLongPtrW(hWnd, GWLP_USERDATA, 0);
         delete this;
+    }
+    void LoadCommandlineArgIfAny(HWND hWnd)
+    {
+        int argc = 0;
+        struct ArgvGuard {
+            LPWSTR* argv;
+            explicit ArgvGuard(int* argc) : argv(CommandLineToArgvW(GetCommandLineW(), argc)) {}
+            ~ArgvGuard() { if (argv) LocalFree(argv); }
+        } args(&argc);
+        if ((args.argv == nullptr) || (argc <= 1))
+            return;
+        if (!LoadFileToEdit(hWnd, args.argv[1]))
+            MessageBoxW(hWnd, L"Failed to open file.", L"Notepad--", MB_OK | MB_ICONERROR);
     }
 
 public:
@@ -132,6 +189,11 @@ public:
         default:
             break;
         }
+    }
+
+    void Handle_FileOpen(HWND /*hWnd*/)
+    {
+        // TODO: file open dialog
     }
     void Handle_About(HWND hWnd)
     {
