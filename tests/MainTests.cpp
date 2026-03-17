@@ -167,7 +167,7 @@ Test EditFieldTests[] = {
             DeleteFileW(filePath.c_str());
 
             PostMessageW(hwnd, WM_COMMAND, IDM_SAVEAS, 0);
-            HWND saveAs = WaitForSaveAsDialog(GetProcessId(proc.hProcess), 5s);
+            HWND saveAs = WaitForCommonFileDialog(GetProcessId(proc.hProcess), 5s);
             Assert::AreNotEqual(nullptr, saveAs, "Save As dialog not found");
 
             HWND dlgEdit = WaitForSaveAsEdit(saveAs, 1s);

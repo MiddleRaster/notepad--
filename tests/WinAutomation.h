@@ -166,7 +166,7 @@ namespace
         return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Has::EitherChildClass{L"DUIViewWndClassName", L"DirectUIHWND"});
     }
 
-    HWND WaitForSaveAsDialog(DWORD pid, std::chrono::milliseconds timeout)
+    HWND WaitForCommonFileDialog(DWORD pid, std::chrono::milliseconds timeout)
     {
         const auto deadline = std::chrono::steady_clock::now() + timeout;
         HWND dlg = nullptr;
@@ -178,11 +178,6 @@ namespace
             std::this_thread::sleep_for(std::chrono::milliseconds{50});
         }
         return dlg;
-    }
-
-    HWND WaitForOpenFileDialog(DWORD pid, std::chrono::milliseconds timeout)
-    {
-        return WaitForSaveAsDialog(pid, timeout);
     }
 
     HWND FindSaveAsEdit(HWND dlg)
@@ -347,6 +342,28 @@ namespace TestAutomation
         }
     };
 
+    class OpenDialog
+    {
+        HWND openDlg;
+    public:
+        OpenDialog(HWND hwnd) : openDlg(hwnd) {}
+        void OpenFile(const std::filesystem::path& filePath)
+        {
+            HWND dlgEdit = WaitForOpenFileEdit(openDlg, 1s);
+            Assert::AreNotEqual(nullptr, dlgEdit, "File Open edit control not found");
+            Assert::IsTrue(SendMessageW(dlgEdit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(filePath.c_str())) != 0, "Failed to set File Open filename");
+
+            HWND okButton = GetDlgItem(openDlg, IDOK);
+            Assert::AreNotEqual(nullptr, okButton, "File Open OK button not found");
+            SendMessageW(okButton, BM_CLICK, 0, 0);
+
+            const auto dialogDeadline = std::chrono::steady_clock::now() + 1s;
+            while (std::chrono::steady_clock::now() < dialogDeadline && IsWindow(openDlg))
+                std::this_thread::sleep_for(50ms);
+        }
+    };
+
+
     class EditField
     {
         HWND edit;
@@ -415,7 +432,7 @@ namespace TestAutomation
         }
         void SaveAs(const std::filesystem::path& fileName)
         {
-            HWND saveAs = WaitForSaveAsDialog(GetProcessId(proc.hProcess), 5s);
+            HWND saveAs = WaitForCommonFileDialog(GetProcessId(proc.hProcess), 5s);
             Assert::AreNotEqual(nullptr, saveAs, "Save As dialog not found");
 
             HWND dlgEdit = WaitForSaveAsEdit(saveAs, 1s);
@@ -434,6 +451,13 @@ namespace TestAutomation
             while (std::chrono::steady_clock::now() < fileDeadline && !std::filesystem::exists(fileName))
                 std::this_thread::sleep_for(50ms);
             Assert::IsTrue(std::filesystem::exists(fileName), "Save As did not create the file");
+        }
+        OpenDialog FileOpen()
+        {
+            PostMessageW(hwnd, WM_COMMAND, IDM_OPEN, 0);
+            HWND openDlg = WaitForCommonFileDialog(GetProcessId(proc.hProcess), 1s);
+            Assert::AreNotEqual(nullptr, openDlg, "File Open dialog not found");
+            return {openDlg};
         }
     };
 }
