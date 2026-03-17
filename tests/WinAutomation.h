@@ -77,15 +77,13 @@ namespace
     HWND WaitForMainWindow(DWORD pid, std::chrono::milliseconds timeout)
     {
         const auto deadline = std::chrono::steady_clock::now() + timeout;
-        HWND hwnd = nullptr;
         while (std::chrono::steady_clock::now() < deadline)
         {
-            hwnd = FindMainWindowForProcess(pid);
-            if (hwnd != nullptr)
-                break;
+            if (HWND hwnd = FindMainWindowForProcess(pid))
+                return hwnd;
             std::this_thread::sleep_for(std::chrono::milliseconds{50});
         }
-        return hwnd;
+        return nullptr;
     }
 
     void TriggerExitViaPopupMenu(HWND hwnd)
