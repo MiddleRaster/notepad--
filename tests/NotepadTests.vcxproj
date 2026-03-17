@@ -153,6 +153,7 @@
     <ClCompile Include="modules\VsTdd20.ixx" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="WindowFinder.h" />
     <ClInclude Include="WinAutomation.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

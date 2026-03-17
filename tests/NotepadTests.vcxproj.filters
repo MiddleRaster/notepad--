@@ -41,5 +41,8 @@
     <ClInclude Include="WinAutomation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="WindowFinder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

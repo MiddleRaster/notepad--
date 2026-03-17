@@ -1,7 +1,21 @@
 ﻿#pragma once
 
-#include <windows.h>
+#include "WindowFinder.h"
 #include "..\src\Resource.h"
+
+namespace WindowFinder::Has
+{
+    struct EitherChildClass
+    {
+        const wchar_t* className1;
+        const wchar_t* className2;
+        bool operator()(HWND hwnd) const
+        {
+            return (nullptr != WindowFinder::FindDesiredChildWindow(hwnd, WindowFinder::Has::ClassName{className1})) ||
+                   (nullptr != WindowFinder::FindDesiredChildWindow(hwnd, WindowFinder::Has::ClassName{className2})) ;
+        }
+    };
+}
 
 namespace
 {
@@ -57,28 +71,7 @@ namespace
 
     HWND FindMainWindowForProcess(DWORD pid)
     {
-        struct Finder
-        {
-            DWORD pid;
-            HWND hwnd{nullptr};
-            static BOOL CALLBACK EnumProc(HWND hWnd, LPARAM lParam)
-            {
-                auto* self = reinterpret_cast<Finder*>(lParam);
-                DWORD windowPid = 0;
-                GetWindowThreadProcessId(hWnd, &windowPid);
-                if (windowPid != self->pid)
-                    return TRUE;
-                if (!IsWindowVisible(hWnd))
-                    return TRUE;
-                if (GetWindow(hWnd, GW_OWNER) != nullptr)
-                    return TRUE;
-                self->hwnd = hWnd;
-                return FALSE;
-            }
-        } finder{pid};
-
-        EnumWindows(Finder::EnumProc, reinterpret_cast<LPARAM>(&finder));
-        return finder.hwnd;
+        return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Is::Visible, WindowFinder::Is::UnOwned);
     }
 
     HWND WaitForMainWindow(DWORD pid, std::chrono::milliseconds timeout)
@@ -172,54 +165,7 @@ namespace
 
     HWND FindSaveAsDialog(DWORD pid)
     {
-        struct Finder
-        {
-            DWORD pid;
-            HWND hwnd{nullptr};
-            static bool HasChildClass(HWND root, const wchar_t* className)
-            {
-                struct ChildFinder
-                {
-                    const wchar_t* className;
-                    bool found{false};
-                    static BOOL CALLBACK EnumProc(HWND hWnd, LPARAM lParam)
-                    {
-                        auto* self = reinterpret_cast<ChildFinder*>(lParam);
-                        wchar_t cls[64]{};
-                        if (GetClassNameW(hWnd, cls, static_cast<int>(std::size(cls))) != 0)
-                        {
-                            if (std::wcscmp(cls, self->className) == 0)
-                            {
-                                self->found = true;
-                                return FALSE;
-                            }
-                        }
-                        return TRUE;
-                    }
-                } finder{className};
-                EnumChildWindows(root, ChildFinder::EnumProc, reinterpret_cast<LPARAM>(&finder));
-                return finder.found;
-            }
-            static BOOL CALLBACK EnumProc(HWND hWnd, LPARAM lParam)
-            {
-                auto* self = reinterpret_cast<Finder*>(lParam);
-                DWORD windowPid = 0;
-                GetWindowThreadProcessId(hWnd, &windowPid);
-                if (windowPid != self->pid)
-                    return TRUE;
-                wchar_t className[64]{};
-                if (GetClassNameW(hWnd, className, static_cast<int>(std::size(className))) == 0)
-                    return TRUE;
-                if (std::wcscmp(className, L"#32770") != 0)
-                    return TRUE;
-                if (!HasChildClass(hWnd, L"DUIViewWndClassName") && !HasChildClass(hWnd, L"DirectUIHWND"))
-                    return TRUE;
-                self->hwnd = hWnd;
-                return FALSE;
-            }
-        } finder{pid};
-        EnumWindows(Finder::EnumProc, reinterpret_cast<LPARAM>(&finder));
-        return finder.hwnd;
+        return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Has::EitherChildClass{L"DUIViewWndClassName", L"DirectUIHWND"});
     }
 
     HWND WaitForSaveAsDialog(DWORD pid, std::chrono::milliseconds timeout)
@@ -243,42 +189,13 @@ namespace
 
     HWND FindSaveAsEdit(HWND dlg)
     {
-        auto FindDescendantByClass = [](HWND root, const wchar_t* className, const auto& self) -> HWND
-        {
-            HWND child = nullptr;
-            while ((child = FindWindowExW(root, child, nullptr, nullptr)) != nullptr)
-            {
-                wchar_t cls[64]{};
-                if (GetClassNameW(child, cls, static_cast<int>(std::size(cls))) != 0)
-                {
-                    if (std::wcscmp(cls, className) == 0)
-                        return child;
-                }
-                if (HWND found = self(child, className, self))
-                    return found;
-            }
-            return nullptr;
-        };
-
-        HWND duiview = FindWindowExW(dlg, nullptr, L"DUIViewWndClassName", nullptr);
-        if (duiview != nullptr)
-        {
-            HWND directUI = FindWindowExW(duiview, nullptr, L"DirectUIHWND", nullptr);
-            if (directUI != nullptr)
-            {
-                HWND sink = FindWindowExW(directUI, nullptr, L"FloatNotifySink", nullptr);
-                if (sink != nullptr)
-                {
-                    HWND combo = FindWindowExW(sink, nullptr, L"ComboBox", nullptr);
-                    if (combo != nullptr)
-                    {
-                        if (HWND edit = FindWindowExW(combo, nullptr, L"Edit", nullptr))
-                            return edit;
-                    }
-                }
-            }
-        }
-        return FindDescendantByClass(dlg, L"Edit", FindDescendantByClass);
+        if (HWND duiview  = WindowFinder::FindDesiredChildWindow(dlg,      WindowFinder::Has::ClassName{L"DUIViewWndClassName"}))
+        if (HWND directUI = WindowFinder::FindDesiredChildWindow(duiview,  WindowFinder::Has::ClassName{L"DirectUIHWND"       }))
+        if (HWND sink     = WindowFinder::FindDesiredChildWindow(directUI, WindowFinder::Has::ClassName{L"FloatNotifySink"    }))
+        if (HWND combo    = WindowFinder::FindDesiredChildWindow(sink,     WindowFinder::Has::ClassName{L"ComboBox"           }))
+        if (HWND edit     = WindowFinder::FindDesiredChildWindow(combo,    WindowFinder::Has::ClassName{L"Edit"               }))
+            return edit;
+        return WindowFinder::FindDesiredChildWindow(dlg, WindowFinder::Has::ClassName{L"Edit"});
     }
 
     HWND WaitForSaveAsEdit(HWND dlg, std::chrono::milliseconds timeout)
@@ -297,17 +214,10 @@ namespace
 
     HWND FindOpenFileEdit(HWND dlg)
     {
-        HWND comboEx = FindWindowExW(dlg, nullptr, L"ComboBoxEx32", nullptr);
-        if (comboEx != nullptr)
-        {
-            HWND combo = FindWindowExW(comboEx, nullptr, L"ComboBox", nullptr);
-            if (combo != nullptr)
-            {
-                HWND edit = FindWindowExW(combo, nullptr, L"Edit", nullptr);
-                if (edit != nullptr)
-                    return edit;
-            }
-        }
+        if (HWND comboEx = WindowFinder::FindDesiredChildWindow(dlg,     WindowFinder::Has::ClassName{L"ComboBoxEx32"}))
+        if (HWND combo   = WindowFinder::FindDesiredChildWindow(comboEx, WindowFinder::Has::ClassName{L"ComboBox"}))
+        if (HWND edit    = WindowFinder::FindDesiredChildWindow(combo,   WindowFinder::Has::ClassName{L"Edit"}))
+            return edit;
         return FindSaveAsEdit(dlg);
     }
 
