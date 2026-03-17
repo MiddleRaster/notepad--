@@ -267,3 +267,175 @@ namespace
         return buffer;
     }
 }
+
+namespace WindowUtils
+{
+    inline HWND WaitForWindow(std::chrono::milliseconds timeout, auto&& pred)
+    {
+        const auto deadline = std::chrono::steady_clock::now() + timeout;
+        while (std::chrono::steady_clock::now() < deadline)
+        {
+            if (HWND hwnd = pred())
+                return hwnd;
+            std::this_thread::sleep_for(50ms);
+        }
+        return nullptr;
+    }
+}
+
+namespace TestAutomation
+{
+    using namespace std::chrono_literals;
+
+    class FileDirtyDialog
+    {
+        HWND FindDialogButton(const wchar_t* label)
+        {
+            HWND button = nullptr;
+            while ((button = FindWindowExW(dialog, button, L"Button", nullptr)) != nullptr)
+            {
+                wchar_t text[64]{};
+                GetWindowTextW(button, text, static_cast<int>(std::size(text)));
+                if (std::wcscmp(text, label) == 0)
+                    return button;
+            }
+            return nullptr;
+        }
+        HWND FindDontSaveButton()
+        {
+            HWND button = nullptr;
+            while ((button = FindWindowExW(dialog, button, L"Button", nullptr)) != nullptr)
+            {
+                wchar_t text[64]{};
+                GetWindowTextW(button, text, static_cast<int>(std::size(text)));
+                if (std::wcscmp(text, L"Don't Save") == 0)
+                    return button;
+            }
+            return nullptr;
+        }
+
+        HWND dialog;
+    public:
+        FileDirtyDialog(DWORD pid)
+        {
+            dialog = WindowUtils::WaitForWindow(5s, [&pid]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{ pid }, WindowFinder::Has::ClassName{ L"#32770" }); });
+            Assert::AreNotEqual(nullptr, dialog, "Exit dialog not found");
+        }
+        std::wstring GetStaticMessage() const
+        {
+            HWND prompt = FindWindowExW(dialog, nullptr, L"Static", nullptr);
+            Assert::AreNotEqual(nullptr, prompt, "Exit dialog prompt not found");
+            wchar_t promptText[128]{};
+            GetWindowTextW(prompt, promptText, static_cast<int>(std::size(promptText)));
+            return promptText;
+        }
+        void ClickDontSave()
+        {
+            HWND dontSave = FindDontSaveButton();
+            Assert::AreNotEqual(nullptr, dontSave, "Don't Save button not found");
+            SendMessageW(dontSave, BM_CLICK, 0, 0);
+        }
+        void PressSave()
+        {
+            HWND saveButton = FindDialogButton(L"Save");
+            Assert::AreNotEqual(nullptr, saveButton, "Save button not found");
+            SendMessageW(saveButton, BM_CLICK, 0, 0);
+        }
+        void PressCancel()
+        {
+            HWND cancelButton = FindDialogButton(L"Cancel");
+            Assert::AreNotEqual(nullptr, cancelButton, "Cancel button not found");
+            SendMessageW(cancelButton, BM_CLICK, 0, 0);
+        }
+    };
+
+    class EditField
+    {
+        HWND edit;
+    public:
+        EditField(HWND hwnd) : edit(hwnd) {}
+        void SetText(const std::wstring& text)
+        {
+            Assert::IsTrue(SendMessageW(edit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(L"")) != 0, "Failed to clear edit field text");
+            for (auto c : text)
+                SendMessageW(edit, WM_CHAR, c, 1);
+        }
+        std::wstring GetText() const
+        {
+            const LRESULT length = SendMessageW(edit, WM_GETTEXTLENGTH, 0, 0);
+            std::wstring buffer(static_cast<size_t>(length) + 1, L'\0');
+            SendMessageW(edit, WM_GETTEXT, static_cast<WPARAM>(buffer.size()), reinterpret_cast<LPARAM>(buffer.data()));
+            buffer.resize(static_cast<size_t>(length));
+            return buffer;
+        }
+    };
+
+    class MainWindow
+    {
+        ProcessGuard proc;
+        HWND hwnd{};
+    public:
+        MainWindow() : proc([&](PROCESS_INFORMATION& pi) { return LaunchNotepadAndWait(pi); })
+        {
+            Assert::IsTrue(proc.created, "Failed to launch Notepad--.exe");
+            hwnd = WaitForMainWindow(GetProcessId(proc.hProcess), 1s);
+            Assert::AreNotEqual(nullptr, hwnd, "Main window did not appear");
+        }
+        ~MainWindow()
+        {
+            Assert::AreEqual(WAIT_OBJECT_0, WaitForSingleObject(proc.hProcess, 5000), "Notepad-- did not exit after Don't Save");
+        }
+        bool IsRunning() const
+        {
+            return IsWindow(hwnd);
+        }
+        void TryExit()
+        {
+            PostMessageW(hwnd, WM_COMMAND, IDM_EXIT, 0);
+        }
+        void MarkAsDirty(const std::wstring& dirty = L"Dirty")
+        {
+            HWND edit = FindWindowExW(hwnd, nullptr, L"Edit", nullptr);
+            Assert::AreNotEqual(nullptr, edit, "Edit control not found");
+            for (wchar_t ch : dirty)
+                SendMessageW(edit, WM_CHAR, ch, 1);
+        }
+        void ClearDirtyFlag()
+        {
+            HWND edit = FindWindowExW(hwnd, nullptr, L"Edit", nullptr);
+            SendMessageW(edit, EM_SETMODIFY, 0, 0);
+        }
+        FileDirtyDialog WaitForExitDialog()
+        {
+            return {GetProcessId(proc.hProcess)};
+        }
+        EditField GetEditField()
+        {
+            HWND edit = FindWindowExW(hwnd, nullptr, L"Edit", nullptr);
+            Assert::AreNotEqual(nullptr, edit, "Edit control not found");
+            return {edit};
+        }
+        void SaveAs(const std::filesystem::path& fileName)
+        {
+            HWND saveAs = WaitForSaveAsDialog(GetProcessId(proc.hProcess), 5s);
+            Assert::AreNotEqual(nullptr, saveAs, "Save As dialog not found");
+
+            HWND dlgEdit = WaitForSaveAsEdit(saveAs, 1s);
+            Assert::AreNotEqual(nullptr, dlgEdit, "Save As edit control not found");
+            Assert::IsTrue(SendMessageW(dlgEdit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(fileName.c_str())) != 0, "Failed to set Save As filename");
+
+            HWND okButton = GetDlgItem(saveAs, IDOK);
+            Assert::AreNotEqual(nullptr, okButton, "Save As OK button not found");
+            SendMessageW(okButton, BM_CLICK, 0, 0);
+
+            const auto dialogDeadline = std::chrono::steady_clock::now() + 5s;
+            while (std::chrono::steady_clock::now() < dialogDeadline && IsWindow(saveAs))
+                std::this_thread::sleep_for(50ms);
+
+            const auto fileDeadline = std::chrono::steady_clock::now() + 5s;
+            while (std::chrono::steady_clock::now() < fileDeadline && !std::filesystem::exists(fileName))
+                std::this_thread::sleep_for(50ms);
+            Assert::IsTrue(std::filesystem::exists(fileName), "Save As did not create the file");
+        }
+    };
+}
