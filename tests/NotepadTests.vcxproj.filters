@@ -30,9 +30,6 @@
     <ClCompile Include="modules\tdd20.ixx">
       <Filter>Module Files</Filter>
     </ClCompile>
-    <ClCompile Include="modules\VsTdd20.ixx">
-      <Filter>Module Files</Filter>
-    </ClCompile>
     <ClCompile Include="FileTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

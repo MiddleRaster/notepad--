@@ -1,6 +1,5 @@
 ﻿import std;
 import tdd20;
-import VsTdd20;
 
 #include <windows.h>
 #include "WinAutomation.h"
@@ -60,7 +59,7 @@ namespace
     }
 }
 
-VsTest ExitTests[] = {
+Test ExitTests[] = {
     { std::string("Exiting when dirty pops up DialogBox; click 'Don't Save'"), []()
         {
             TestAutomation::MainWindow notepad;

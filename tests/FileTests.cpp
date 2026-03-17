@@ -1,21 +1,8 @@
-﻿//import std;
-//import tdd20;
-//import VsTdd20;
-//
-//#include <windows.h>
-//#include <commdlg.h> // trying Copilot's way
-//#include <UIAutomation.h>
-//#include <wrl/client.h>
-
-// 1. Win32 headers FIRST
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-//#include <commdlg.h>
-
-// 2. THEN your modules
-import std;
+﻿import std;
 import tdd20;
-import VsTdd20;
+
+#include <windows.h>
+//#include <commdlg.h> // trying Copilot's way
 
 #include "..\src\Resource.h"
 #include "WinAutomation.h"
@@ -28,7 +15,7 @@ namespace TDD20
     template <> inline std::string ToString(const std::nullptr_t&) { return "0x0"; }
 }
 
-VsTest FileTests[] = {
+Test FileTests[] = {
     { std::string("File->Open loads file into edit control"), []()
         {
             for (int attempt=0; attempt<3; ++attempt)

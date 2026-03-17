@@ -1,6 +1,5 @@
 ﻿import std;
 import tdd20;
-import VsTdd20;
 
 #include <windows.h>
 #include "WinAutomation.h"
@@ -13,7 +12,7 @@ namespace TDD20
     template <> inline std::string ToString(const std::nullptr_t&) { return "0x0"; }
 }
 
-VsTest MainTests[] = {
+Test MainTests[] = {
     { std::string("Launch and Exit Notepad--"), []()
         {
             ProcessGuard proc([&](PROCESS_INFORMATION& pi) { return LaunchNotepadAndWait(pi); });
@@ -132,7 +131,7 @@ VsTest MainTests[] = {
     },
 };
 
-VsTest EditFieldTests[] = {
+Test EditFieldTests[] = {
     { std::string("Edit Field Round Trip"), []()
         {
             ProcessGuard proc([&](PROCESS_INFORMATION& pi) { return LaunchNotepadAndWait(pi); });
