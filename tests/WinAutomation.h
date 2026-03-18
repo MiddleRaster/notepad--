@@ -385,29 +385,129 @@ namespace TestAutomation
         }
     };
 
+    class MessageBox
+    {
+        HWND msgBox;
+        HWND* pHWND;
+        DWORD pid;
+    public:
+        MessageBox(HWND hwnd, HWND* pHWND, DWORD pid) : msgBox(hwnd), pHWND(pHWND), pid(pid) {}
+        void PressOk()
+        {
+            HWND okButton = GetDlgItem(msgBox, IDOK);
+            if (okButton != nullptr)
+                SendMessageW(okButton, BM_CLICK, 0, 0);
+            else
+                SendMessageW(msgBox, WM_CLOSE, 0, 0);
+
+            // now that we've gotten rid of the modal messagebox, notepad-- should come up.
+            // Find its HWND and attach to MainWindow class.
+            *pHWND = WaitForMainWindow(pid, 1s);
+            Assert::AreNotEqual(nullptr, *pHWND, "Main window did not appear");
+        }
+    };
+
     class MainWindow
     {
-        ProcessGuard proc;
-        HWND hwnd{};
-    public:
-        MainWindow() : proc([&](PROCESS_INFORMATION& pi) { return LaunchNotepadAndWait(pi); })
+        void ValidateProcAndAssignHWND()
         {
             Assert::IsTrue(proc.created, "Failed to launch Notepad--.exe");
             hwnd = WaitForMainWindow(GetProcessId(proc.hProcess), 1s);
             Assert::AreNotEqual(nullptr, hwnd, "Main window did not appear");
         }
-        ~MainWindow()
+
+        ProcessGuard proc;
+        HWND hwnd{};
+    public:
+        MainWindow() : proc([&](PROCESS_INFORMATION& pi) { return LaunchNotepadAndWait(pi); })
         {
-            Assert::AreEqual(WAIT_OBJECT_0, WaitForSingleObject(proc.hProcess, 5000), "Notepad-- did not exit after Don't Save");
+            ValidateProcAndAssignHWND();
         }
+        MainWindow(const std::filesystem::path& filePath) : proc([&](PROCESS_INFORMATION& pi) { return LaunchNotepadWithArgsAndWait(pi, filePath.c_str()); })
+        {
+            if (std::filesystem::exists(filePath))
+                ValidateProcAndAssignHWND();
+        }
+        ~MainWindow()
+        {   // we need to shut down cleanly no matter what.
+
+            // can't throw from a dtor, ever.
+            auto doNotThrow = [](auto fn) {
+                try { return fn(); }
+                catch (...) { }
+            };
+                
+            if (TRUE != IsWindow(hwnd))
+                return;
+
+            doNotThrow([&]() { ExitViaMenu(); });
+            if (TRUE != IsWindow(hwnd))
+                return;
+
+            doNotThrow([&]() { ExitViaMenuPopUp(); });
+            if (TRUE != IsWindow(hwnd))
+                return;
+
+            DWORD exitCode = 0;
+            if (GetExitCodeProcess(proc.hProcess, &exitCode)) {
+                if (exitCode == STILL_ACTIVE)
+                    TerminateProcess(proc.hProcess, 0); // process is running: terminate it
+                else
+                    return;                             // process has exited
+            }
+            else
+                ; // GetExitCodeProcess failed. 
+
+            if (WAIT_OBJECT_0 == WaitForSingleObject(proc.hProcess, 1000))
+                TerminateProcess(proc.hProcess, 0);
+        }
+        MessageBox GetModalMessageBox()
+        {
+            HWND msg = WindowUtils::WaitForWindow(1s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}); });
+            Assert::AreNotEqual(nullptr, msg, "Error message box not shown for bad file path");
+
+            return MessageBox(msg, &hwnd, GetProcessId(proc.hProcess));
+        }
+
         bool IsRunning() const
         {
             return IsWindow(hwnd);
         }
+        std::wstring GetTitle() const
+        {
+            wchar_t title[256]{};
+            Assert::IsTrue(GetWindowTextW(hwnd, title, static_cast<int>(std::size(title))) > 0, "Failed to read window title");
+            return title;
+        }
+
         void TryExit()
         {
             PostMessageW(hwnd, WM_COMMAND, IDM_EXIT, 0);
         }
+        void ExitViaMenu()
+        {
+            HMENU menu = GetMenu(hwnd);
+            Assert::IsTrue(menu != nullptr, "Menu handle was null");
+            SendMessageW(hwnd, WM_INITMENU, reinterpret_cast<WPARAM>(menu), 0);
+            SendMessageW(hwnd, WM_COMMAND, IDM_EXIT, 0);
+        }
+        void ExitViaMenuPopUp()
+        {
+            HMENU menu = GetMenu(hwnd);
+            Assert::IsTrue(menu != nullptr, "Menu handle was null");
+            HMENU fileMenu = GetSubMenu(menu, 0);
+            Assert::IsTrue(fileMenu != nullptr, "File menu handle was null");
+            RECT itemRect{};
+            Assert::IsTrue(GetMenuItemRect(hwnd, menu, 0, &itemRect) != 0, "Failed to get menu item rect");
+
+            std::thread invokeThread([&]()  {
+                                                std::this_thread::sleep_for(std::chrono::milliseconds{ 100 });
+                                                PostMessageW(hwnd, WM_COMMAND, IDM_EXIT, 0);
+                                            });
+            TrackPopupMenu(fileMenu, TPM_LEFTALIGN | TPM_TOPALIGN, itemRect.left, itemRect.bottom, 0, hwnd, nullptr);
+            invokeThread.join();
+        }
+
         void MarkAsDirty(const std::wstring& dirty = L"Dirty")
         {
             HWND edit = FindWindowExW(hwnd, nullptr, L"Edit", nullptr);
