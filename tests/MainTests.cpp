@@ -34,7 +34,7 @@ Test MainTests[] = {
     { std::string("Launch with file path loads file into edit control"), []()
         {
             const wchar_t* text = L"Hello from file!";
-            std::filesystem::path filePath = CreateTempUtf8File(L"notepad--cli.txt", text);
+            std::filesystem::path filePath = FileUtils::CreateTempUtf8File(L"notepad--cli.txt", text);
 
             TestAutomation::MainWindow proc(filePath);
             Assert::AreEqual(std::wstring(text), proc.GetEditField().GetText(), "Edit text did not match file contents");

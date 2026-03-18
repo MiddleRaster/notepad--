@@ -19,7 +19,7 @@ Test FileTests[] = {
             for (int attempt=0; attempt<3; ++attempt)
             try {
                 const wchar_t* text = L"Hello from file open!";
-                std::filesystem::path filePath = CreateTempUtf8File(L"notepad--open.txt", text);
+                std::filesystem::path filePath = FileUtils::CreateTempUtf8File(L"notepad--open.txt", text);
 
                 TestAutomation::MainWindow proc;
                 auto openDlg = proc.FileOpen();

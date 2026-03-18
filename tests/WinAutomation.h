@@ -47,188 +47,21 @@ namespace
                 CloseHandle(hProcess);
         }
     };
+}
 
-    std::wstring GetModuleDirectory()
+namespace FileUtils
+{
+    using namespace std::chrono_literals;
+
+    inline std::filesystem::path GetTempFilename(const wchar_t* fileName)
     {
-        std::wstring path(MAX_PATH, L'\0');
-        DWORD len = GetModuleFileNameW(nullptr, path.data(), static_cast<DWORD>(path.size()));
-        while (len == path.size())
-        {
-            path.resize(path.size() * 2, L'\0');
-            len = GetModuleFileNameW(nullptr, path.data(), static_cast<DWORD>(path.size()));
-        }
-        path.resize(len);
-        std::filesystem::path p(path);
-        return p.parent_path().wstring();
+        wchar_t tempPath[MAX_PATH]{};
+        Assert::IsTrue(GetTempPathW(MAX_PATH, tempPath) > 0, "Failed to get temp path");
+        std::filesystem::path filePath = std::filesystem::path(tempPath) / fileName;
+        DeleteFileW(filePath.c_str());
+        return filePath;
     }
-
-    std::wstring GetNotepadExePath()
-    {   // tests.exe lives alongside Notepad--.exe under <repo>\x64\<config>
-        std::filesystem::path p(GetModuleDirectory());
-        p /= L"Notepad--.exe";
-        return p.wstring();
-    }
-
-    HWND FindMainWindowForProcess(DWORD pid)
-    {
-        return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Is::Visible, WindowFinder::Is::UnOwned);
-    }
-
-    HWND WaitForMainWindow(DWORD pid, std::chrono::milliseconds timeout)
-    {
-        const auto deadline = std::chrono::steady_clock::now() + timeout;
-        while (std::chrono::steady_clock::now() < deadline)
-        {
-            if (HWND hwnd = FindMainWindowForProcess(pid))
-                return hwnd;
-            std::this_thread::sleep_for(std::chrono::milliseconds{50});
-        }
-        return nullptr;
-    }
-
-    void TriggerExitViaPopupMenu(HWND hwnd)
-    {
-        HMENU menu = GetMenu(hwnd);
-        Assert::IsTrue(menu != nullptr, "Menu handle was null");
-        if (menu == nullptr)
-            return;
-
-        HMENU fileMenu = GetSubMenu(menu, 0);
-        Assert::IsTrue(fileMenu != nullptr, "File menu handle was null");
-        if (fileMenu == nullptr)
-            return;
-
-        RECT itemRect{};
-        Assert::IsTrue(GetMenuItemRect(hwnd, menu, 0, &itemRect) != 0, "Failed to get menu item rect");
-
-        std::thread invokeThread([&]()
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds{100});
-            PostMessageW(hwnd, WM_COMMAND, IDM_EXIT, 0);
-        });
-
-        TrackPopupMenu(fileMenu, TPM_LEFTALIGN | TPM_TOPALIGN, itemRect.left, itemRect.bottom, 0, hwnd, nullptr);
-        invokeThread.join();
-    }
-
-    void CloseAppViaFileExit(HWND hwnd, HANDLE process)
-    {
-        HMENU menu = GetMenu(hwnd);
-        Assert::IsTrue(menu != nullptr, "Menu handle was null");
-        SendMessageW(hwnd, WM_INITMENU, reinterpret_cast<WPARAM>(menu), 0);
-        SendMessageW(hwnd, WM_COMMAND, IDM_EXIT, 0);
-        Assert::AreEqual(WAIT_OBJECT_0, WaitForSingleObject(process, 5000), "Notepad-- did not exit after IDM_EXIT");
-    }
-
-    bool LaunchNotepadAndWait(PROCESS_INFORMATION& pi)
-    {
-        const std::wstring exePath = GetNotepadExePath();
-        Assert::IsTrue(std::filesystem::exists(exePath), "Notepad--.exe not found");
-
-        STARTUPINFOW si{};
-        si.cb = sizeof(si);
-        std::wstring cmdLine = L"\"" + exePath + L"\"";
-        const bool created = CreateProcessW(exePath.c_str(), cmdLine.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi) != FALSE;
-        Assert::IsTrue(created, "Failed to launch Notepad--.exe");
-
-        if (created)
-            WaitForInputIdle(pi.hProcess, 5000);
-
-        return created;
-    }
-
-    bool LaunchNotepadWithArgsAndWait(PROCESS_INFORMATION& pi, const wchar_t* args)
-    {
-        const std::wstring exePath = GetNotepadExePath();
-        Assert::IsTrue(std::filesystem::exists(exePath), "Notepad--.exe not found");
-
-        STARTUPINFOW si{};
-        si.cb = sizeof(si);
-        std::wstring cmdLine = L"\"" + exePath + L"\"";
-        if (args != nullptr && args[0] != L'\0')
-        {
-            cmdLine += L" ";
-            cmdLine += L"\"";
-            cmdLine += args;
-            cmdLine += L"\"";
-        }
-        const bool created = CreateProcessW(exePath.c_str(), cmdLine.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi) != FALSE;
-        Assert::IsTrue(created, "Failed to launch Notepad--.exe");
-
-        if (created)
-            WaitForInputIdle(pi.hProcess, 5000);
-
-        return created;
-    }
-
-    HWND FindSaveAsDialog(DWORD pid)
-    {
-        return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Has::EitherChildClass{L"DUIViewWndClassName", L"DirectUIHWND"});
-    }
-
-    HWND WaitForCommonFileDialog(DWORD pid, std::chrono::milliseconds timeout)
-    {
-        const auto deadline = std::chrono::steady_clock::now() + timeout;
-        HWND dlg = nullptr;
-        while (std::chrono::steady_clock::now() < deadline)
-        {
-            dlg = FindSaveAsDialog(pid);
-            if (dlg != nullptr)
-                break;
-            std::this_thread::sleep_for(std::chrono::milliseconds{50});
-        }
-        return dlg;
-    }
-
-    HWND FindSaveAsEdit(HWND dlg)
-    {
-        if (HWND duiview  = WindowFinder::FindDesiredChildWindow(dlg,      WindowFinder::Has::ClassName{L"DUIViewWndClassName"}))
-        if (HWND directUI = WindowFinder::FindDesiredChildWindow(duiview,  WindowFinder::Has::ClassName{L"DirectUIHWND"       }))
-        if (HWND sink     = WindowFinder::FindDesiredChildWindow(directUI, WindowFinder::Has::ClassName{L"FloatNotifySink"    }))
-        if (HWND combo    = WindowFinder::FindDesiredChildWindow(sink,     WindowFinder::Has::ClassName{L"ComboBox"           }))
-        if (HWND edit     = WindowFinder::FindDesiredChildWindow(combo,    WindowFinder::Has::ClassName{L"Edit"               }))
-            return edit;
-        return WindowFinder::FindDesiredChildWindow(dlg, WindowFinder::Has::ClassName{L"Edit"});
-    }
-
-    HWND WaitForSaveAsEdit(HWND dlg, std::chrono::milliseconds timeout)
-    {
-        const auto deadline = std::chrono::steady_clock::now() + timeout;
-        HWND edit = nullptr;
-        while (std::chrono::steady_clock::now() < deadline)
-        {
-            edit = FindSaveAsEdit(dlg);
-            if (edit != nullptr)
-                break;
-            std::this_thread::sleep_for(std::chrono::milliseconds{10});
-        }
-        return edit;
-    }
-
-    HWND FindOpenFileEdit(HWND dlg)
-    {
-        if (HWND comboEx = WindowFinder::FindDesiredChildWindow(dlg,     WindowFinder::Has::ClassName{L"ComboBoxEx32"}))
-        if (HWND combo   = WindowFinder::FindDesiredChildWindow(comboEx, WindowFinder::Has::ClassName{L"ComboBox"}))
-        if (HWND edit    = WindowFinder::FindDesiredChildWindow(combo,   WindowFinder::Has::ClassName{L"Edit"}))
-            return edit;
-        return FindSaveAsEdit(dlg);
-    }
-
-    HWND WaitForOpenFileEdit(HWND dlg, std::chrono::milliseconds timeout)
-    {
-        const auto deadline = std::chrono::steady_clock::now() + timeout;
-        HWND edit = nullptr;
-        while (std::chrono::steady_clock::now() < deadline)
-        {
-            edit = FindOpenFileEdit(dlg);
-            if (edit != nullptr)
-                break;
-            std::this_thread::sleep_for(std::chrono::milliseconds{10});
-        }
-        return edit;
-    }
-
-    std::filesystem::path CreateTempUtf8File(const wchar_t* fileName, const wchar_t* text)
+    inline std::filesystem::path CreateTempUtf8File(const wchar_t* fileName, const wchar_t* text)
     {
         wchar_t tempPath[MAX_PATH]{};
         Assert::IsTrue(GetTempPathW(MAX_PATH, tempPath) > 0, "Failed to get temp path");
@@ -251,28 +84,6 @@ namespace
         return filePath;
     }
 
-    std::wstring GetEditText(HWND edit)
-    {
-        const LRESULT length = SendMessageW(edit, WM_GETTEXTLENGTH, 0, 0);
-        std::wstring buffer(static_cast<size_t>(length) + 1, L'\0');
-        SendMessageW(edit, WM_GETTEXT, static_cast<WPARAM>(buffer.size()), reinterpret_cast<LPARAM>(buffer.data()));
-        buffer.resize(static_cast<size_t>(length));
-        return buffer;
-    }
-}
-
-namespace FileUtils
-{
-    using namespace std::chrono_literals;
-
-    inline std::filesystem::path GetTempFilename(const wchar_t* fileName)
-    {
-        wchar_t tempPath[MAX_PATH]{};
-        Assert::IsTrue(GetTempPathW(MAX_PATH, tempPath) > 0, "Failed to get temp path");
-        std::filesystem::path filePath = std::filesystem::path(tempPath) / fileName;
-        DeleteFileW(filePath.c_str());
-        return filePath;
-    }
     inline std::wstring ReadFileUtf8(const std::filesystem::path& filePath)
     {
         std::ifstream in;
@@ -388,14 +199,38 @@ namespace TestAutomation
         }
     };
 
-    class OpenDialog
+
+    struct CommonFileDialogUtils
     {
+        static HWND FindSaveAsEdit(HWND dlg)
+        {
+            if (HWND duiview  = WindowFinder::FindDesiredChildWindow(dlg,      WindowFinder::Has::ClassName{L"DUIViewWndClassName"}))
+            if (HWND directUI = WindowFinder::FindDesiredChildWindow(duiview,  WindowFinder::Has::ClassName{L"DirectUIHWND"       }))
+            if (HWND sink     = WindowFinder::FindDesiredChildWindow(directUI, WindowFinder::Has::ClassName{L"FloatNotifySink"    }))
+            if (HWND combo    = WindowFinder::FindDesiredChildWindow(sink,     WindowFinder::Has::ClassName{L"ComboBox"           }))
+            if (HWND edit     = WindowFinder::FindDesiredChildWindow(combo,    WindowFinder::Has::ClassName{L"Edit"               }))
+                return edit;
+            return WindowFinder::FindDesiredChildWindow(dlg, WindowFinder::Has::ClassName{L"Edit"});
+        }
+    };
+
+    class OpenDialog : private CommonFileDialogUtils
+    {
+        HWND FindOpenFileEdit()
+        {
+            if (HWND comboEx = WindowFinder::FindDesiredChildWindow(openDlg, WindowFinder::Has::ClassName{L"ComboBoxEx32"}))
+            if (HWND combo   = WindowFinder::FindDesiredChildWindow(comboEx, WindowFinder::Has::ClassName{L"ComboBox"}))
+            if (HWND edit    = WindowFinder::FindDesiredChildWindow(combo,   WindowFinder::Has::ClassName{L"Edit"}))
+                return edit;
+            return FindSaveAsEdit(openDlg);
+        }
+
         HWND openDlg;
     public:
         OpenDialog(HWND hwnd) : openDlg(hwnd) {}
         void OpenFile(const std::filesystem::path& filePath)
         {
-            HWND dlgEdit = WaitForOpenFileEdit(openDlg, 1s);
+            HWND dlgEdit = WindowUtils::WaitForWindow(1s, [&]() {return FindOpenFileEdit(); });
             Assert::AreNotEqual(nullptr, dlgEdit, "File Open edit control not found");
             Assert::IsTrue(SendMessageW(dlgEdit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(filePath.c_str())) != 0, "Failed to set File Open filename");
 
@@ -408,7 +243,6 @@ namespace TestAutomation
                 std::this_thread::sleep_for(50ms);
         }
     };
-
 
     class EditField
     {
@@ -431,13 +265,12 @@ namespace TestAutomation
         }
     };
 
-    class MessageBox
+    class ModalMessageBox
     {
         HWND msgBox;
-        HWND* pHWND;
-        DWORD pid;
+        std::function<void()> onDismissed;
     public:
-        MessageBox(HWND hwnd, HWND* pHWND, DWORD pid) : msgBox(hwnd), pHWND(pHWND), pid(pid) {}
+        ModalMessageBox(HWND hwnd, std::function<void()> onDismissed) : msgBox(hwnd), onDismissed(std::move(onDismissed)) {}
         void PressOk()
         {
             HWND okButton = GetDlgItem(msgBox, IDOK);
@@ -446,19 +279,54 @@ namespace TestAutomation
             else
                 SendMessageW(msgBox, WM_CLOSE, 0, 0);
 
-            // now that we've gotten rid of the modal messagebox, notepad-- should come up.
-            // Find its HWND and attach to MainWindow class.
-            *pHWND = WaitForMainWindow(pid, 1s);
-            Assert::AreNotEqual(nullptr, *pHWND, "Main window did not appear");
+            onDismissed(); // let MainWindow peer know that the modal messagebox is gone, so it can look for the main window
         }
     };
 
-    class MainWindow
+    class MainWindow : private CommonFileDialogUtils
     {
+        static std::wstring GetModuleDirectory()
+        {
+            std::wstring path(MAX_PATH, L'\0');
+            DWORD len = GetModuleFileNameW(nullptr, path.data(), static_cast<DWORD>(path.size()));
+            while (len == path.size())
+            {
+                path.resize(path.size() * 2, L'\0');
+                len = GetModuleFileNameW(nullptr, path.data(), static_cast<DWORD>(path.size()));
+            }
+            path.resize(len);
+            std::filesystem::path p(path);
+            return p.parent_path().wstring();
+        }
+        static std::wstring GetNotepadExePath()
+        {   // tests.exe lives alongside Notepad--.exe under <repo>\x64\<config>
+            std::filesystem::path p(GetModuleDirectory());
+            p /= L"Notepad--.exe";
+            return p.wstring();
+        }
+        static bool LaunchNotepadAndWait(PROCESS_INFORMATION& pi, const wchar_t* args=nullptr)
+        {
+            const std::wstring exePath = GetNotepadExePath();
+            Assert::IsTrue(std::filesystem::exists(exePath), "Notepad--.exe not found");
+
+            STARTUPINFOW si{};
+            si.cb = sizeof(si);
+            std::wstring cmdLine = L"\"" + exePath + L"\"";
+            if (args != nullptr && args[0] != L'\0')
+            {
+                cmdLine += L" ";
+                cmdLine += L"\"";
+                cmdLine += args;
+                cmdLine += L"\"";
+            }
+            Assert::IsTrue(FALSE != CreateProcessW(exePath.c_str(), cmdLine.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi), "Failed to launch Notepad--.exe");
+            WaitForInputIdle(pi.hProcess, 5000);
+            return true;
+        }
         void ValidateProcAndAssignHWND()
         {
             Assert::IsTrue(proc.created, "Failed to launch Notepad--.exe");
-            hwnd = WaitForMainWindow(GetProcessId(proc.hProcess), 1s);
+            hwnd = WindowUtils::WaitForWindow(1s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Is::Visible, WindowFinder::Is::UnOwned); });
             Assert::AreNotEqual(nullptr, hwnd, "Main window did not appear");
         }
 
@@ -469,10 +337,17 @@ namespace TestAutomation
         {
             ValidateProcAndAssignHWND();
         }
-        MainWindow(const std::filesystem::path& filePath) : proc([&](PROCESS_INFORMATION& pi) { return LaunchNotepadWithArgsAndWait(pi, filePath.c_str()); })
+        MainWindow(const std::filesystem::path& filePath) : proc([&](PROCESS_INFORMATION& pi) { return LaunchNotepadAndWait(pi, filePath.c_str()); })
         {
             if (std::filesystem::exists(filePath))
                 ValidateProcAndAssignHWND();
+        }
+        ModalMessageBox GetModalMessageBox()
+        {
+            HWND msg = WindowUtils::WaitForWindow(1s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}); });
+            Assert::AreNotEqual(nullptr, msg, "Error message box not shown for bad file path");
+
+            return ModalMessageBox(msg, [this]() { this->ValidateProcAndAssignHWND(); });
         }
         ~MainWindow()
         {   // we need to shut down cleanly no matter what.
@@ -506,13 +381,6 @@ namespace TestAutomation
 
             if (WAIT_OBJECT_0 == WaitForSingleObject(proc.hProcess, 1000))
                 TerminateProcess(proc.hProcess, 0);
-        }
-        MessageBox GetModalMessageBox()
-        {
-            HWND msg = WindowUtils::WaitForWindow(1s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}); });
-            Assert::AreNotEqual(nullptr, msg, "Error message box not shown for bad file path");
-
-            return MessageBox(msg, &hwnd, GetProcessId(proc.hProcess));
         }
 
         bool IsRunning() const
@@ -566,7 +434,7 @@ namespace TestAutomation
             HWND edit = FindWindowExW(hwnd, nullptr, L"Edit", nullptr);
             SendMessageW(edit, EM_SETMODIFY, 0, 0);
         }
-        FileDirtyDialog WaitForExitDialog()
+        FileDirtyDialog GetExitDialog()
         {
             return {GetProcessId(proc.hProcess)};
         }
@@ -578,10 +446,10 @@ namespace TestAutomation
         }
         void AutomateExistingSaveFileAsDialogBox(const std::filesystem::path& fileName)
         {
-            HWND saveAs = WaitForCommonFileDialog(GetProcessId(proc.hProcess), 5s);
+            HWND saveAs = WindowUtils::WaitForWindow(5s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Has::EitherChildClass{L"DUIViewWndClassName", L"DirectUIHWND"}); });
             Assert::AreNotEqual(nullptr, saveAs, "Save As dialog not found");
 
-            HWND dlgEdit = WaitForSaveAsEdit(saveAs, 1s);
+            HWND dlgEdit = WindowUtils::WaitForWindow(1s, [&]() { return FindSaveAsEdit(saveAs); });
             Assert::AreNotEqual(nullptr, dlgEdit, "Save As edit control not found");
             Assert::IsTrue(SendMessageW(dlgEdit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(fileName.c_str())) != 0, "Failed to set Save As filename");
 
@@ -606,7 +474,7 @@ namespace TestAutomation
         OpenDialog FileOpen()
         {
             PostMessageW(hwnd, WM_COMMAND, IDM_OPEN, 0);
-            HWND openDlg = WaitForCommonFileDialog(GetProcessId(proc.hProcess), 1s);
+            HWND openDlg = WindowUtils::WaitForWindow(1s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Has::EitherChildClass{L"DUIViewWndClassName", L"DirectUIHWND"}); });
             Assert::AreNotEqual(nullptr, openDlg, "File Open dialog not found");
             return {openDlg};
         }
