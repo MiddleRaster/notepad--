@@ -7,14 +7,8 @@ namespace WindowFinder
 {
     struct Is
     {
-        static bool Visible(HWND hwnd)
-        {
-            return !!IsWindowVisible(hwnd);
-        }
-        static bool UnOwned(HWND hwnd)
-        {
-            return GetWindow(hwnd, GW_OWNER) == nullptr;
-        }
+        static bool Visible(HWND hwnd) { return !!IsWindowVisible(hwnd); }
+        static bool UnOwned(HWND hwnd) { return GetWindow(hwnd, GW_OWNER) == nullptr; }
     };
     namespace Has
     {
@@ -40,28 +34,25 @@ namespace WindowFinder
         };
     }
 
-    template <typename P>                 auto Predicates(P p)           { return p; }
-    template <typename P, typename... Ps> auto Predicates(P p, Ps... ps) { return [p, rest = Predicates(ps...)](HWND hwnd) { return p(hwnd) && rest(hwnd); }; }
-
-    template<typename Pred> HWND FindDesiredChildWindow(HWND parent, Pred&& pred)
+    HWND FindDesiredChildWindow(HWND parent, auto... preds)
     {
+        auto combined = [...ps = preds](HWND hwnd) { return (ps(hwnd) && ...); };
         struct Finder
         {
-            Pred& pred;
-            HWND hwnd{nullptr};
-            static BOOL CALLBACK EnumProc(HWND hWnd, LPARAM lParam)
-            {
-                auto* This = reinterpret_cast<Finder*>(lParam);
-                if (!This->pred(hWnd))
-                    return TRUE;
-                This->hwnd = hWnd;
-                return FALSE;
-            }
-        } finder{pred};
-        EnumChildWindows(parent, Finder::EnumProc, reinterpret_cast<LPARAM>(&finder));
+            decltype(combined) pred;
+            HWND hwnd{};
+        } finder{combined};
+
+        EnumChildWindows(parent,[](HWND hWnd, LPARAM lParam) -> BOOL
+                                {
+                                    auto* finder = reinterpret_cast<Finder*>(lParam);
+                                    if (!finder->pred(hWnd))
+                                        return TRUE;
+                                    finder->hwnd = hWnd;
+                                    return FALSE;
+                                }, reinterpret_cast<LPARAM>(&finder));
         return finder.hwnd;
     }
-    template <typename... Ps> HWND FindDesiredChildWindow(HWND parent, Ps... preds) { return FindDesiredChildWindow(parent, Predicates(preds...)); }
 }
 #endif
 
