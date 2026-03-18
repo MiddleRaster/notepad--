@@ -151,6 +151,8 @@ public:
         {
             if (SaveEditTextToFile(hWnd, filePath))
             {
+                SendMessageW(edit, EM_SETMODIFY, 0, 0); // clear the dirty flag, until the user types again.
+
                 std::wstring title = std::filesystem::path{ filePath }.filename().wstring();
                 if (!title.empty())
                     SetWindowTextW(hWnd, title.c_str());
