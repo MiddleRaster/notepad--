@@ -261,6 +261,52 @@ namespace
     }
 }
 
+namespace FileUtils
+{
+    using namespace std::chrono_literals;
+
+    inline std::filesystem::path GetTempFilename(const wchar_t* fileName)
+    {
+        wchar_t tempPath[MAX_PATH]{};
+        Assert::IsTrue(GetTempPathW(MAX_PATH, tempPath) > 0, "Failed to get temp path");
+        std::filesystem::path filePath = std::filesystem::path(tempPath) / fileName;
+        DeleteFileW(filePath.c_str());
+        return filePath;
+    }
+    inline std::wstring ReadFileUtf8(const std::filesystem::path& filePath)
+    {
+        std::ifstream in;
+        for (int i=0; i<20; ++i)
+        {
+            in.open(filePath, std::ios::binary);
+            if (!in.is_open())
+                std::this_thread::sleep_for(50ms);
+            else
+                break;
+        }
+        Assert::IsTrue(in.is_open(), "Failed to open saved file");
+        std::string bytes((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+        in.close();
+        if (bytes.size() >= 3 && static_cast<unsigned char>(bytes[0]) == 0xEF && static_cast<unsigned char>(bytes[1]) == 0xBB && static_cast<unsigned char>(bytes[2]) == 0xBF)
+            bytes.erase(0, 3);
+
+        const int wideSize = MultiByteToWideChar(CP_UTF8, 0, bytes.data(), static_cast<int>(bytes.size()), nullptr, 0);
+        Assert::IsTrue(wideSize >= 0, "Failed to convert saved file to UTF-16");
+        std::wstring wide(static_cast<size_t>(wideSize), L'\0');
+        MultiByteToWideChar(CP_UTF8, 0, bytes.data(), static_cast<int>(bytes.size()), wide.data(), wideSize);
+        return wide;
+    }
+    inline void DeleteFileWithRetry(const std::filesystem::path& filePath)
+    {
+        for (int i=0; i<20; ++i)
+        {
+            if (DeleteFileW(filePath.c_str()) != 0)
+                return;
+            std::this_thread::sleep_for(50ms);
+        }
+        Assert::IsTrue(false, "Failed to delete test file");
+    }
+}
 namespace WindowUtils
 {
     inline HWND WaitForWindow(std::chrono::milliseconds timeout, auto&& pred)
@@ -530,7 +576,7 @@ namespace TestAutomation
             Assert::AreNotEqual(nullptr, edit, "Edit control not found");
             return {edit};
         }
-        void SaveAs(const std::filesystem::path& fileName)
+        void AutomateExistingSaveFileAsDialogBox(const std::filesystem::path& fileName)
         {
             HWND saveAs = WaitForCommonFileDialog(GetProcessId(proc.hProcess), 5s);
             Assert::AreNotEqual(nullptr, saveAs, "Save As dialog not found");
@@ -551,6 +597,11 @@ namespace TestAutomation
             while (std::chrono::steady_clock::now() < fileDeadline && !std::filesystem::exists(fileName))
                 std::this_thread::sleep_for(50ms);
             Assert::IsTrue(std::filesystem::exists(fileName), "Save As did not create the file");
+        }
+        void SaveAs(const std::filesystem::path& fileName)
+        {
+            PostMessageW(hwnd, WM_COMMAND, IDM_SAVEAS, 0);
+            AutomateExistingSaveFileAsDialogBox(fileName);
         }
         OpenDialog FileOpen()
         {

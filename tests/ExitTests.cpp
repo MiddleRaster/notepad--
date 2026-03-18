@@ -12,53 +12,6 @@ namespace TDD20
     template <> inline std::string ToString(const std::nullptr_t&) { return "0x0"; }
 }
 
-namespace
-{
-    std::filesystem::path GetTempFilename(const wchar_t* fileName)
-    {
-        wchar_t tempPath[MAX_PATH]{};
-        Assert::IsTrue(GetTempPathW(MAX_PATH, tempPath) > 0, "Failed to get temp path");
-        std::filesystem::path filePath = std::filesystem::path(tempPath) / fileName;
-        DeleteFileW(filePath.c_str());
-        return filePath;
-    }
-
-    std::wstring ReadFileUtf8(const std::filesystem::path& filePath)
-    {
-        std::ifstream in;
-        for (int i=0; i<20; ++i)
-        {
-            in.open(filePath, std::ios::binary);
-            if (!in.is_open())
-                std::this_thread::sleep_for(50ms);
-            else
-                break;
-        }
-        Assert::IsTrue(in.is_open(), "Failed to open saved file");
-        std::string bytes((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-        in.close();
-        if (bytes.size() >= 3 && static_cast<unsigned char>(bytes[0]) == 0xEF && static_cast<unsigned char>(bytes[1]) == 0xBB && static_cast<unsigned char>(bytes[2]) == 0xBF)
-            bytes.erase(0, 3);
-
-        const int wideSize = MultiByteToWideChar(CP_UTF8, 0, bytes.data(), static_cast<int>(bytes.size()), nullptr, 0);
-        Assert::IsTrue(wideSize >= 0, "Failed to convert saved file to UTF-16");
-        std::wstring wide(static_cast<size_t>(wideSize), L'\0');
-        MultiByteToWideChar(CP_UTF8, 0, bytes.data(), static_cast<int>(bytes.size()), wide.data(), wideSize);
-        return wide;
-    }
-
-    void DeleteFileWithRetry(const std::filesystem::path& filePath)
-    {
-        for (int i=0; i<20; ++i)
-        {
-            if (DeleteFileW(filePath.c_str()) != 0)
-                return;
-            std::this_thread::sleep_for(50ms);
-        }
-        Assert::IsTrue(false, "Failed to delete test file");
-    }
-}
-
 Test ExitTests[] = {
     { std::string("Exiting when dirty pops up DialogBox; click 'Don't Save'"), []()
         {
@@ -83,10 +36,10 @@ Test ExitTests[] = {
             auto dialog = notepad.WaitForExitDialog();
             dialog.PressSave();
 
-            std::filesystem::path filePath = GetTempFilename(L"notepad--exit-save.txt");
-            notepad.SaveAs(filePath);
-            Assert::AreEqual(std::wstring(text), ReadFileUtf8(filePath), "Save As file contents mismatch");
-            DeleteFileWithRetry(filePath);
+            std::filesystem::path filePath = FileUtils::GetTempFilename(L"notepad--exit-save.txt");
+            notepad.AutomateExistingSaveFileAsDialogBox(filePath);
+            Assert::AreEqual(std::wstring(text), FileUtils::ReadFileUtf8(filePath), "Save As file contents mismatch");
+            FileUtils::DeleteFileWithRetry(filePath);
         }
     },
     { std::string("Exiting when dirty then Cancel keeps app open"), []()
