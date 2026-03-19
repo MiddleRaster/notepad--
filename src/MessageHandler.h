@@ -15,6 +15,7 @@ class MessageHandler
 
     bool LoadFileToEdit(HWND hWnd, const wchar_t* path)
     {
+        bool ret = false;
         HANDLE file = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
         if (file != INVALID_HANDLE_VALUE)
         {
@@ -42,15 +43,14 @@ class MessageHandler
                             std::wstring title = std::filesystem::path{ path }.filename().wstring();
                             if (!title.empty())
                                 SetWindowTextW(hWnd, title.c_str());
-                            CloseHandle(file);
-                            return true;
+                            ret = true;
                         }
                     }
                 }
             }
             CloseHandle(file);
         }
-        return false;
+        return ret;
     }
 
     bool SaveEditTextToFile(HWND hWnd, const wchar_t* path)
