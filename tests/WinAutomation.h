@@ -245,7 +245,6 @@ namespace TestAutomation
     };
     class SaveAsDialog : private CommonFileDialogUtils
     {
-    public:
         HWND saveAs;
     public:
         SaveAsDialog(HWND hwnd) : saveAs(hwnd) {}
