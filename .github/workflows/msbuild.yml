@@ -42,4 +42,8 @@ jobs:
       # Add additional options to the MSBuild command line here (like platform or verbosity level).
       # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
       run: msbuild /restore /m /p:Configuration=${{env.BUILD_CONFIGURATION}} /p:PlatformToolset=v143 ${{env.SOLUTION_FILE_PATH}}
-      
+
+    - name: Run tests (console test EXE)
+      run: |
+        cd x64/Release
+        .\tests.exe
