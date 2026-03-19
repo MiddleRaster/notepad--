@@ -79,14 +79,13 @@ Test EditFieldTests[] = {
             const wchar_t* text = L"Hello, World!";
             edit.SetText(text);
             
+            auto saveAs = proc.SaveAs();
             std::filesystem::path tempPath = FileUtils::GetTempFilename(L"notepad--test.txt");
-            proc.SaveAs(tempPath);
+            saveAs.SaveFile(tempPath);
             Assert::AreEqual(std::wstring(text), FileUtils::ReadFileUtf8(tempPath), "Save As file contents mismatch");
-
             Assert::AreEqual(std::wstring(L"notepad--test.txt"), proc.GetTitle(), "Unexpected window title after Save As");
 
             proc.ExitViaMenu();
-
             Assert::IsTrue(DeleteFileW(tempPath.c_str()), "Failed to delete test file");
         }
     },

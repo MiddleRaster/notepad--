@@ -37,7 +37,10 @@ Test ExitTests[] = {
             dialog.PressSave();
 
             std::filesystem::path filePath = FileUtils::GetTempFilename(L"notepad--exit-save.txt");
-            notepad.AutomateExistingSaveFileAsDialogBox(filePath);
+
+            auto saveAs = notepad.FindExistingFileSaveAsDialogBox();
+            saveAs.SaveFile(filePath);
+
             Assert::AreEqual(std::wstring(text), FileUtils::ReadFileUtf8(filePath), "Save As file contents mismatch");
             FileUtils::DeleteFileWithRetry(filePath);
         }

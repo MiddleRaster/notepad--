@@ -243,6 +243,33 @@ namespace TestAutomation
                 std::this_thread::sleep_for(50ms);
         }
     };
+    class SaveAsDialog : private CommonFileDialogUtils
+    {
+    public:
+        HWND saveAs;
+    public:
+        SaveAsDialog(HWND hwnd) : saveAs(hwnd) {}
+        void SaveFile(const std::filesystem::path& fileName)
+        {
+            HWND dlgEdit = WindowUtils::WaitForWindow(1s, [&]() { return FindSaveAsEdit(saveAs); });
+            Assert::AreNotEqual(nullptr, dlgEdit, "Save As edit control not found");
+            Assert::IsTrue(SendMessageW(dlgEdit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(fileName.c_str())) != 0, "Failed to set Save As filename");
+
+            HWND okButton = GetDlgItem(saveAs, IDOK);
+            Assert::AreNotEqual(nullptr, okButton, "Save As OK button not found");
+            SendMessageW(okButton, BM_CLICK, 0, 0);
+
+            const auto dialogDeadline = std::chrono::steady_clock::now() + 5s;
+            while (std::chrono::steady_clock::now() < dialogDeadline && IsWindow(saveAs))
+                std::this_thread::sleep_for(50ms);
+
+            const auto fileDeadline = std::chrono::steady_clock::now() + 5s;
+            while (std::chrono::steady_clock::now() < fileDeadline && !std::filesystem::exists(fileName))
+                std::this_thread::sleep_for(50ms);
+            Assert::IsTrue(std::filesystem::exists(fileName), "Save As did not create the file");
+        }
+    };
+
 
     class EditField
     {
@@ -283,7 +310,7 @@ namespace TestAutomation
         }
     };
 
-    class MainWindow : private CommonFileDialogUtils
+    class MainWindow
     {
         static std::wstring GetModuleDirectory()
         {
@@ -444,32 +471,16 @@ namespace TestAutomation
             Assert::AreNotEqual(nullptr, edit, "Edit control not found");
             return {edit};
         }
-        void AutomateExistingSaveFileAsDialogBox(const std::filesystem::path& fileName)
+        SaveAsDialog FindExistingFileSaveAsDialogBox()
         {
-            HWND saveAs = WindowUtils::WaitForWindow(5s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Has::EitherChildClass{L"DUIViewWndClassName", L"DirectUIHWND"}); });
+            HWND saveAs = WindowUtils::WaitForWindow(5s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{ pid }, WindowFinder::Has::ClassName{ L"#32770" }, WindowFinder::Has::EitherChildClass{ L"DUIViewWndClassName", L"DirectUIHWND" }); });
             Assert::AreNotEqual(nullptr, saveAs, "Save As dialog not found");
-
-            HWND dlgEdit = WindowUtils::WaitForWindow(1s, [&]() { return FindSaveAsEdit(saveAs); });
-            Assert::AreNotEqual(nullptr, dlgEdit, "Save As edit control not found");
-            Assert::IsTrue(SendMessageW(dlgEdit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(fileName.c_str())) != 0, "Failed to set Save As filename");
-
-            HWND okButton = GetDlgItem(saveAs, IDOK);
-            Assert::AreNotEqual(nullptr, okButton, "Save As OK button not found");
-            SendMessageW(okButton, BM_CLICK, 0, 0);
-
-            const auto dialogDeadline = std::chrono::steady_clock::now() + 5s;
-            while (std::chrono::steady_clock::now() < dialogDeadline && IsWindow(saveAs))
-                std::this_thread::sleep_for(50ms);
-
-            const auto fileDeadline = std::chrono::steady_clock::now() + 5s;
-            while (std::chrono::steady_clock::now() < fileDeadline && !std::filesystem::exists(fileName))
-                std::this_thread::sleep_for(50ms);
-            Assert::IsTrue(std::filesystem::exists(fileName), "Save As did not create the file");
+            return {saveAs};
         }
-        void SaveAs(const std::filesystem::path& fileName)
+        SaveAsDialog SaveAs()
         {
             PostMessageW(hwnd, WM_COMMAND, IDM_SAVEAS, 0);
-            AutomateExistingSaveFileAsDialogBox(fileName);
+            return FindExistingFileSaveAsDialogBox();
         }
         OpenDialog FileOpen()
         {
