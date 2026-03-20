@@ -139,29 +139,11 @@ namespace TestAutomation
 
     class FileDirtyDialog
     {
-        HWND FindDialogButton(const wchar_t* label)
+        void ClickButton(int id)
         {
-            HWND button = nullptr;
-            while ((button = FindWindowExW(dialog, button, L"Button", nullptr)) != nullptr)
-            {
-                wchar_t text[64]{};
-                GetWindowTextW(button, text, static_cast<int>(std::size(text)));
-                if (std::wcscmp(text, label) == 0)
-                    return button;
-            }
-            return nullptr;
-        }
-        HWND FindDontSaveButton()
-        {
-            HWND button = nullptr;
-            while ((button = FindWindowExW(dialog, button, L"Button", nullptr)) != nullptr)
-            {
-                wchar_t text[64]{};
-                GetWindowTextW(button, text, static_cast<int>(std::size(text)));
-                if (std::wcscmp(text, L"Don't Save") == 0)
-                    return button;
-            }
-            return nullptr;
+            HWND control = GetDlgItem(dialog, id);
+            Assert::AreNotEqual(nullptr, control, "Button not found");
+            SendMessage(control, BM_CLICK, 0, 0);
         }
 
         HWND dialog;
@@ -179,26 +161,10 @@ namespace TestAutomation
             GetWindowTextW(prompt, promptText, static_cast<int>(std::size(promptText)));
             return promptText;
         }
-        void ClickDontSave()
-        {
-            HWND dontSave = FindDontSaveButton();
-            Assert::AreNotEqual(nullptr, dontSave, "Don't Save button not found");
-            SendMessageW(dontSave, BM_CLICK, 0, 0);
-        }
-        void PressSave()
-        {
-            HWND saveButton = FindDialogButton(L"Save");
-            Assert::AreNotEqual(nullptr, saveButton, "Save button not found");
-            SendMessageW(saveButton, BM_CLICK, 0, 0);
-        }
-        void PressCancel()
-        {
-            HWND cancelButton = FindDialogButton(L"Cancel");
-            Assert::AreNotEqual(nullptr, cancelButton, "Cancel button not found");
-            SendMessageW(cancelButton, BM_CLICK, 0, 0);
-        }
+        void ClickDontSave() { ClickButton(IDC_DONTSAVE); }
+        void PressSave    () { ClickButton(IDC_SAVE); }
+        void PressCancel  () { ClickButton(IDCANCEL); }
     };
-
 
     struct CommonFileDialogUtils
     {
