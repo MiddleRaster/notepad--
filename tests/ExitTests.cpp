@@ -19,7 +19,7 @@ Test ExitTests[] = {
             notepad.MarkAsDirty();
             notepad.TryExit();
 
-            auto dialog = notepad.GetExitDialog();
+            auto dialog = notepad.GetFileDirtyDialog();
             Assert::AreEqual(std::wstring(L"Do you want to save the changes?"), dialog.GetStaticMessage(), "Exit dialog prompt text mismatch");
 
             dialog.ClickDontSave();
@@ -33,7 +33,7 @@ Test ExitTests[] = {
             editField.SetText(text);
             notepad.TryExit();
 
-            auto dialog = notepad.GetExitDialog();
+            auto dialog = notepad.GetFileDirtyDialog();
             dialog.PressSave();
 
             std::filesystem::path filePath = FileUtils::GetTempFilename(L"notepad--exit-save.txt");
@@ -53,7 +53,7 @@ Test ExitTests[] = {
             editField.SetText(text);
             notepad.TryExit();
 
-            auto dialog = notepad.GetExitDialog();
+            auto dialog = notepad.GetFileDirtyDialog();
             dialog.PressCancel();
 
             Assert::IsTrue(notepad.IsRunning(), "Notepad-- exited after Cancel");

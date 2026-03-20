@@ -117,6 +117,26 @@ class MessageHandler
             MessageBoxW(hWnd, L"Failed to open file.", L"Notepad--", MB_OK | MB_ICONERROR);
     }
 
+    INT_PTR GetFileDirtySaveDialogChoice(HWND hWnd)
+    {
+        return DialogBox(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDD_EXITCONFIRM), hWnd, [](HWND hDlg, UINT message, WPARAM wParam, LPARAM /*lParam*/) -> INT_PTR
+            {
+                if (message == WM_INITDIALOG) return (INT_PTR)TRUE;
+                if (message == WM_COMMAND)
+                {
+                    switch (LOWORD(wParam))
+                    {
+                    case IDC_SAVE:
+                    case IDC_DONTSAVE:
+                    case IDCANCEL:
+                        EndDialog(hDlg, LOWORD(wParam));
+                        return (INT_PTR)TRUE;
+                    }
+                }
+                return (INT_PTR)FALSE;
+            });
+    }
+
 public:
     static MessageHandler& GetHandler(HWND hWnd) { return *reinterpret_cast<MessageHandler*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA)); }
     static int CreateHandlerAndEditWindow(HWND hWnd)
@@ -169,24 +189,7 @@ public:
             return;
         }
 
-        const INT_PTR choice = DialogBox(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDD_EXITCONFIRM), hWnd, [](HWND hDlg, UINT message, WPARAM wParam, LPARAM /*lParam*/) -> INT_PTR
-            {
-                if (message == WM_INITDIALOG) return (INT_PTR)TRUE;
-                if (message == WM_COMMAND)
-                {
-                    switch (LOWORD(wParam))
-                    {
-                    case IDC_SAVE:
-                    case IDC_DONTSAVE:
-                    case IDCANCEL:
-                        EndDialog(hDlg, LOWORD(wParam));
-                        return (INT_PTR)TRUE;
-                    }
-                }
-                return (INT_PTR)FALSE;
-            });
-
-        switch (choice)
+        switch (GetFileDirtySaveDialogChoice(hWnd))
         {
         case IDC_SAVE:
             Handle_FileSaveAs(hWnd);
@@ -216,6 +219,27 @@ public:
             if (!LoadFileToEdit(hWnd, filePath))
                 MessageBoxW(hWnd, L"Failed to open file.", L"Notepad--", MB_OK | MB_ICONERROR);
         }
+    }
+    void Handle_FileNew(HWND hWnd)
+    {
+        if (SendMessageW(edit, EM_GETMODIFY, 0, 0) != 0) // if dirty
+        {
+            switch (GetFileDirtySaveDialogChoice(hWnd))
+            {
+            case IDC_SAVE:
+                Handle_FileSaveAs(hWnd);
+                break;
+            case IDC_DONTSAVE:
+                break;
+            case IDCANCEL:
+                return; // user changed his mind. Don't do File->New
+            default:
+                break;
+            }
+        }
+        SetWindowTextW(hWnd, L"Untitled");
+        SendMessageW(edit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(L""));
+        SendMessageW(edit, EM_SETMODIFY, 0, 0);
     }
     void Handle_About(HWND hWnd)
     {

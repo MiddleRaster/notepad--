@@ -10,9 +10,10 @@
 #define IDD_EXITCONFIRM         104
 
 #define IDM_ABOUT               110
-#define IDM_OPEN                111
-#define IDM_SAVEAS              112
-#define IDM_EXIT                113
+#define IDM_NEW                 111
+#define IDM_OPEN                112
+#define IDM_SAVEAS              113
+#define IDM_EXIT                114
 
 #define IDI_NOTEPAD             120
 #define IDI_SMALL_NOTEPAD       121

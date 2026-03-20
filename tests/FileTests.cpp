@@ -13,7 +13,85 @@ namespace TDD20
     template <> inline std::string ToString(const std::nullptr_t&) { return "0x0"; }
 }
 
+namespace Poll
+{
+    void Until(std::chrono::milliseconds timeout, std::chrono::milliseconds step, auto&& pred)
+    {
+        const auto deadline = std::chrono::steady_clock::now() + timeout;
+        while (std::chrono::steady_clock::now() < deadline)
+        {
+            if (pred())
+                return;
+            std::this_thread::sleep_for(step);
+        }
+    }
+}
+
 Test FileTests[] = {
+    { std::string("File->New does nothing if not dirty"), []()
+        {
+            TestAutomation::MainWindow main;
+            main.FileNew();
+            main.ExitViaMenu();
+        }
+    },
+    { std::string("File->New opens 'do you want to save the changes?' dialog box if dirty:  cancel case"), []()
+        {
+            TestAutomation::MainWindow main;
+
+            auto edit = main.GetEditField();
+            edit.SetText(L"File->New opens 'do you want to save the changes?' dialog box if dirty:  cancel case");
+
+            main.FileNew();
+            auto fileDirtyDialog = main.GetFileDirtyDialog();
+            fileDirtyDialog.PressCancel();
+
+            Assert::AreEqual(L"File->New opens 'do you want to save the changes?' dialog box if dirty:  cancel case", edit.GetText());
+            
+            main.ClearDirtyFlag();
+            main.ExitViaMenu();
+        }
+    },
+    { std::string("File->New opens 'do you want to save the changes?' dialog box if dirty:  no case"), []()
+        {
+            TestAutomation::MainWindow main;
+
+            auto edit = main.GetEditField();
+            edit.SetText(L"File->New opens 'do you want to save the changes?' dialog box if dirty:  no case");
+
+            main.FileNew();
+            auto fileDirtyDialog = main.GetFileDirtyDialog();
+            fileDirtyDialog.ClickDontSave();
+
+            Assert::AreEqual(L"", edit.GetText());
+
+            main.ClearDirtyFlag();
+            main.ExitViaMenu();
+        }
+    },
+    { std::string("File->New opens 'do you want to save the changes?' dialog box if dirty:  yes case"), []()
+        {
+            TestAutomation::MainWindow main;
+
+            auto edit = main.GetEditField();
+            edit.SetText(L"File->New opens 'do you want to save the changes?' dialog box if dirty:  yes case");
+
+            main.FileNew();
+            auto fileDirtyDialog = main.GetFileDirtyDialog();
+            fileDirtyDialog.PressSave();
+
+            auto saveAsDlg = main.FindExistingFileSaveAsDialogBox();
+            saveAsDlg.Cancel();
+
+            Poll::Until(1s, 1ms, [&edit]() { return edit.GetText().length() == 0; });
+
+            Assert::AreEqual(L"", edit.GetText());
+
+            main.ClearDirtyFlag();
+            main.ExitViaMenu();
+        }
+    },
+
     { std::string("File->Open loads file into edit control"), []()
         {
             for (int attempt=0; attempt<3; ++attempt)

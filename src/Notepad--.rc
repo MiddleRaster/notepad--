@@ -36,6 +36,7 @@ IDC_NOTEPAD MENU
 BEGIN
     POPUP "&File"
     BEGIN
+        MENUITEM "&New",                 IDM_NEW
         MENUITEM "&Open...",             IDM_OPEN
         MENUITEM "Save &As...",          IDM_SAVEAS
         MENUITEM "E&xit",                IDM_EXIT

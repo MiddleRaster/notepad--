@@ -267,8 +267,17 @@ namespace TestAutomation
                 std::this_thread::sleep_for(50ms);
             Assert::IsTrue(std::filesystem::exists(fileName), "Save As did not create the file");
         }
-    };
+        void Cancel()
+        {
+            HWND cancelButton = GetDlgItem(saveAs, IDCANCEL);
+            Assert::AreNotEqual(nullptr, cancelButton, "Cancel button not found");
+            SendMessageW(cancelButton, BM_CLICK, 0, 0);
 
+            const auto dialogDeadline = std::chrono::steady_clock::now() + 5s;
+            while (std::chrono::steady_clock::now() < dialogDeadline && IsWindow(saveAs))
+                std::this_thread::sleep_for(50ms);
+        }
+    };
 
     class EditField
     {
@@ -420,6 +429,11 @@ namespace TestAutomation
             return title;
         }
 
+        void FileNew()
+        {
+            PostMessageW(hwnd, WM_COMMAND, IDM_NEW, 0);
+        }
+
         void TryExit()
         {
             PostMessageW(hwnd, WM_COMMAND, IDM_EXIT, 0);
@@ -460,7 +474,8 @@ namespace TestAutomation
             HWND edit = FindWindowExW(hwnd, nullptr, L"Edit", nullptr);
             SendMessageW(edit, EM_SETMODIFY, 0, 0);
         }
-        FileDirtyDialog GetExitDialog()
+
+        FileDirtyDialog GetFileDirtyDialog()
         {
             return {GetProcessId(proc.hProcess)};
         }
