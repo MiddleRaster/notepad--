@@ -122,6 +122,10 @@ class MessageHandler
     {
         return MessageBoxW(hWnd, std::format(L"Do you want to save changes to {}?", Title).c_str(), L"Notepad--", MB_YESNOCANCEL | MB_ICONEXCLAMATION);
     }
+    bool IsDirty() const
+    {
+        return SendMessageW(edit, EM_GETMODIFY, 0, 0) != 0;
+    }
 
 public:
     static MessageHandler& GetHandler(HWND hWnd) { return *reinterpret_cast<MessageHandler*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA)); }
@@ -169,7 +173,7 @@ public:
     }
     void Handle_Exit(HWND hWnd)
     {
-        if (SendMessageW(edit, EM_GETMODIFY, 0, 0) == 0)
+        if (!IsDirty())
         {
             DestroyWindow(hWnd);
             return;
@@ -192,6 +196,25 @@ public:
 
     void Handle_FileOpen(HWND hWnd)
     {
+        if (IsDirty())
+        {
+            switch (GetWantToSaveChangedMessageBoxChoice(hWnd))
+            {
+            case IDYES:
+                Handle_FileSaveAs(hWnd);
+                break;
+            case IDCANCEL:
+                return;
+            case IDNO:
+            default:
+                break;
+            }
+        }
+
+        SetWindowTextW(hWnd, L"Untitled");
+        SendMessageW(edit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(L""));
+        SendMessageW(edit, EM_SETMODIFY, 0, 0);
+
         wchar_t filePath[MAX_PATH] = L"";
         OPENFILENAMEW ofn{};
         ofn.lStructSize  = sizeof(ofn);
@@ -209,7 +232,7 @@ public:
     }
     void Handle_FileNew(HWND hWnd)
     {
-        if (SendMessageW(edit, EM_GETMODIFY, 0, 0) != 0) // if dirty
+        if (IsDirty())
         {
             switch (GetWantToSaveChangedMessageBoxChoice(hWnd))
             {

@@ -22,7 +22,7 @@ Test ExitTests[] = {
             auto messageBox = notepad.GetFileDirtyMessageBox();
             Assert::AreEqual(std::wstring(L"Do you want to save changes to Untitled?"), messageBox.GetStaticMessage(), "Exit dialog prompt text mismatch");
     
-            messageBox.ClickDontSave();
+            messageBox.PressDontSave();
         }
     },
     { std::string("Exiting when dirty then Save writes file"), []()

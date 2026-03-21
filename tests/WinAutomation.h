@@ -132,6 +132,19 @@ namespace WindowUtils
         return nullptr;
     }
 }
+namespace Poll
+{
+    void Until(std::chrono::milliseconds timeout, std::chrono::milliseconds step, auto&& pred)
+    {
+        const auto deadline = std::chrono::steady_clock::now() + timeout;
+        while (std::chrono::steady_clock::now() < deadline)
+        {
+            if (pred())
+                return;
+            std::this_thread::sleep_for(step);
+        }
+    }
+}
 
 namespace TestAutomation
 {
@@ -161,7 +174,7 @@ namespace TestAutomation
             GetWindowTextW(prompt, promptText, static_cast<int>(std::size(promptText)));
             return promptText;
         }
-        void ClickDontSave() { ClickButton(IDNO); }
+        void PressDontSave() { ClickButton(IDNO); }
         void PressSave    () { ClickButton(IDYES); }
         void PressCancel  () { ClickButton(IDCANCEL); }
     };
@@ -204,9 +217,16 @@ namespace TestAutomation
             Assert::AreNotEqual(nullptr, okButton, "File Open OK button not found");
             SendMessageW(okButton, BM_CLICK, 0, 0);
 
-            const auto dialogDeadline = std::chrono::steady_clock::now() + 1s;
-            while (std::chrono::steady_clock::now() < dialogDeadline && IsWindow(openDlg))
-                std::this_thread::sleep_for(50ms);
+            Poll::Until(1s, 1ms, [this]() { return !IsWindow(openDlg); });
+        }
+        void PressCancel()
+        {
+            HWND cancel = GetDlgItem(openDlg, IDCANCEL);
+            Assert::AreNotEqual(nullptr, cancel, "File Open's Cancel button not found");
+
+            SendMessageW(cancel, BM_CLICK, 0, 0);
+
+            Poll::Until(1s, 1ms, [this]() { return !IsWindow(openDlg); });
         }
     };
     class SaveAsDialog : private CommonFileDialogUtils
@@ -462,10 +482,13 @@ namespace TestAutomation
             PostMessageW(hwnd, WM_COMMAND, IDM_SAVEAS, 0);
             return FindExistingFileSaveAsDialogBox();
         }
-        OpenDialog FileOpen()
+        void FileOpen()
         {
             PostMessageW(hwnd, WM_COMMAND, IDM_OPEN, 0);
-            HWND openDlg = WindowUtils::WaitForWindow(1s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Has::EitherChildClass{L"DUIViewWndClassName", L"DirectUIHWND"}); });
+        }
+        OpenDialog FindExistingOpenDialog()
+        {
+            HWND openDlg = WindowUtils::WaitForWindow(1s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{ pid }, WindowFinder::Has::ClassName{ L"#32770" }, WindowFinder::Has::EitherChildClass{ L"DUIViewWndClassName", L"DirectUIHWND" }); });
             Assert::AreNotEqual(nullptr, openDlg, "File Open dialog not found");
             return {openDlg};
         }

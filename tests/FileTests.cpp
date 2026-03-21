@@ -13,20 +13,6 @@ namespace TDD20
     template <> inline std::string ToString(const std::nullptr_t&) { return "0x0"; }
 }
 
-namespace Poll
-{
-    void Until(std::chrono::milliseconds timeout, std::chrono::milliseconds step, auto&& pred)
-    {
-        const auto deadline = std::chrono::steady_clock::now() + timeout;
-        while (std::chrono::steady_clock::now() < deadline)
-        {
-            if (pred())
-                return;
-            std::this_thread::sleep_for(step);
-        }
-    }
-}
-
 Test FileNewTests[] = {
     { std::string("File->New does nothing if not dirty"), []()
         {
@@ -61,7 +47,7 @@ Test FileNewTests[] = {
 
             main.FileNew();
             auto fileDirtyMessageBox = main.GetFileDirtyMessageBox();
-            fileDirtyMessageBox.ClickDontSave();
+            fileDirtyMessageBox.PressDontSave();
 
             Assert::AreEqual(L"", edit.GetText());
 
@@ -98,13 +84,15 @@ Test FileOpenTests[] = {
         {
             for (int attempt=0; attempt<3; ++attempt)
             try {
-                const wchar_t* text = L"Hello from file open!";
+                const wchar_t* text = L"File->Open loads file into edit control";
                 std::filesystem::path filePath = FileUtils::CreateTempUtf8File(L"notepad--open.txt", text);
 
                 TestAutomation::MainWindow proc;
-                auto openDlg = proc.FileOpen();
+                proc.FileOpen();
+                auto openDlg = proc.FindExistingOpenDialog();
 
-                std::this_thread::sleep_for(100ms); // Without this delay, the dialog reports "File not found" even though the file exists and WM_SETTEXT succeeds.
+                // Without this delay, the dialog reports "File not found" even though the file exists and WM_SETTEXT succeeds.
+                std::this_thread::sleep_for(std::chrono::milliseconds(100*(attempt+1))); // longer and longer delay...
 
                 openDlg.OpenFile(filePath);
                 auto edit = proc.GetEditField();
@@ -121,9 +109,65 @@ Test FileOpenTests[] = {
             }
         }
     },
-/*
-    { std::string("File->Open if dirty displays file dirty dialog:  Cancel case"),[]() { Assert::Fail("not implemented yet"); } },
-    { std::string("File->Open if dirty displays file dirty dialog:  Save case  "),[]() { Assert::Fail("not implemented yet"); } },
-    { std::string("File->Open if dirty displays file dirty dialog:  No case    "),[]() { Assert::Fail("not implemented yet"); } },
-*/
+    { std::string("File->Open if dirty displays file dirty messageBox:  Cancel case"),[]()
+        {
+            TestAutomation::MainWindow main;
+            main.GetEditField().SetText(L"File->Open if dirty displays file dirty messageBox:  Cancel case");
+
+            main.FileOpen();
+
+            auto msgBox = main.GetFileDirtyMessageBox();
+            msgBox.PressDontSave();
+
+            auto openDlg = main.FindExistingOpenDialog();
+            openDlg.PressCancel();
+
+            Assert::AreEqual("", main.GetEditField().GetText(), "after File->Open and cancel, edit field should be blank.");
+
+            main.ExitViaMenu();
+        }
+    },
+    { std::string("File->Open if dirty displays file dirty messageBox:  Save case  "),[]()
+        {
+            TestAutomation::MainWindow main;
+            main.GetEditField().SetText(L"File->Open if dirty displays file dirty messageBox:  Save case  ");
+
+            main.FileOpen();
+            auto msgBox = main.GetFileDirtyMessageBox();
+            msgBox.PressSave();
+
+            auto saveAs = main.FindExistingFileSaveAsDialogBox();
+
+            auto path = FileUtils::GetTempFilename(L"FileOpenSaveAs.txt");
+            saveAs.SaveFile(path);
+
+            auto contents = FileUtils::ReadFileUtf8(path);
+            FileUtils::DeleteFileWithRetry(path);
+            Assert::AreEqual(L"File->Open if dirty displays file dirty messageBox:  Save case  ", contents, "file contents didn't match edit field");
+
+            auto openDlg = main.FindExistingOpenDialog();
+            openDlg.PressCancel();
+
+            Assert::AreEqual("", main.GetEditField().GetText(), "should be blank");
+
+            main.ExitViaMenu();
+        }
+    },
+    { std::string("File->Open if dirty displays file dirty messageBox:  No case    "),[]()
+        {
+            TestAutomation::MainWindow main;
+            main.GetEditField().SetText(L"File->Open if dirty displays file dirty messageBox:  No case    ");
+
+            main.FileOpen();
+            auto msgBox = main.GetFileDirtyMessageBox();
+            msgBox.PressDontSave();
+
+            auto openDlg = main.FindExistingOpenDialog();
+            openDlg.PressCancel();
+
+            Assert::AreEqual("", main.GetEditField().GetText(), "after File->Open when dirty and the user selects 'No' and when the OpenDialog show, he selects cancel, then edit field should be blank.");
+
+            main.ExitViaMenu();
+        }
+    },
 };
