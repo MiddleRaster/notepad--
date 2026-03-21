@@ -3,7 +3,7 @@ import tdd20;
 
 #include <windows.h>
 #include "..\src\Resource.h"
-#include "WinAutomation.h"
+#include "Automation.h"
 
 using namespace std::chrono_literals;
 using namespace TDD20;
