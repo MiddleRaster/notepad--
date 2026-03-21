@@ -27,7 +27,7 @@ namespace Poll
     }
 }
 
-Test FileTests[] = {
+Test FileNewTests[] = {
     { std::string("File->New does nothing if not dirty"), []()
         {
             TestAutomation::MainWindow main;
@@ -91,7 +91,9 @@ Test FileTests[] = {
             main.ExitViaMenu();
         }
     },
+};
 
+Test FileOpenTests[] = {
     { std::string("File->Open loads file into edit control"), []()
         {
             for (int attempt=0; attempt<3; ++attempt)
@@ -119,4 +121,9 @@ Test FileTests[] = {
             }
         }
     },
+/*
+    { std::string("File->Open if dirty displays file dirty dialog:  Cancel case"),[]() { Assert::Fail("not implemented yet"); } },
+    { std::string("File->Open if dirty displays file dirty dialog:  Save case  "),[]() { Assert::Fail("not implemented yet"); } },
+    { std::string("File->Open if dirty displays file dirty dialog:  No case    "),[]() { Assert::Fail("not implemented yet"); } },
+*/
 };
