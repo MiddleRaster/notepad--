@@ -32,6 +32,19 @@ namespace WindowFinder
                 return std::wcscmp(cls, className.c_str()) == 0;
             }
         };
+        class NotStyle
+        {
+            DWORD notThisStyle{};
+        public:
+            NotStyle(DWORD dw) : notThisStyle(dw) {}
+            bool operator()(HWND hwnd) const
+            {
+                DWORD style = GetWindowLong(hwnd, GWL_STYLE);
+                if (style & notThisStyle)
+                    return false;
+                return true;
+            }
+        };
     }
 
     HWND FindDesiredChildWindow(HWND parent, auto... preds)

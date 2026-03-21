@@ -12,6 +12,7 @@
 class MessageHandler
 {
     HWND edit{};
+    std::wstring Title{L"Untitled"};
 
     bool LoadFileToEdit(HWND hWnd, const wchar_t* path)
     {
@@ -117,24 +118,9 @@ class MessageHandler
             MessageBoxW(hWnd, L"Failed to open file.", L"Notepad--", MB_OK | MB_ICONERROR);
     }
 
-    INT_PTR GetFileDirtySaveDialogChoice(HWND hWnd)
+    auto GetWantToSaveChangedMessageBoxChoice(HWND hWnd)
     {
-        return DialogBox(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDD_EXITCONFIRM), hWnd, [](HWND hDlg, UINT message, WPARAM wParam, LPARAM /*lParam*/) -> INT_PTR
-            {
-                if (message == WM_INITDIALOG) return (INT_PTR)TRUE;
-                if (message == WM_COMMAND)
-                {
-                    switch (LOWORD(wParam))
-                    {
-                    case IDC_SAVE:
-                    case IDC_DONTSAVE:
-                    case IDCANCEL:
-                        EndDialog(hDlg, LOWORD(wParam));
-                        return (INT_PTR)TRUE;
-                    }
-                }
-                return (INT_PTR)FALSE;
-            });
+        return MessageBoxW(hWnd, std::format(L"Do you want to save changes to {}?", Title).c_str(), L"Notepad--", MB_YESNOCANCEL | MB_ICONEXCLAMATION);
     }
 
 public:
@@ -189,15 +175,16 @@ public:
             return;
         }
 
-        switch (GetFileDirtySaveDialogChoice(hWnd))
+        switch (GetWantToSaveChangedMessageBoxChoice(hWnd))
         {
-        case IDC_SAVE:
+        case IDYES:
             Handle_FileSaveAs(hWnd);
             DestroyWindow(hWnd);
             break;
-        case IDC_DONTSAVE:
+        case IDNO:
             DestroyWindow(hWnd);
             break;
+        case IDCANCEL:
         default:
             break;
         }
@@ -224,12 +211,12 @@ public:
     {
         if (SendMessageW(edit, EM_GETMODIFY, 0, 0) != 0) // if dirty
         {
-            switch (GetFileDirtySaveDialogChoice(hWnd))
+            switch (GetWantToSaveChangedMessageBoxChoice(hWnd))
             {
-            case IDC_SAVE:
+            case IDYES:
                 Handle_FileSaveAs(hWnd);
                 break;
-            case IDC_DONTSAVE:
+            case IDNO:
                 break;
             case IDCANCEL:
                 return; // user changed his mind. Don't do File->New

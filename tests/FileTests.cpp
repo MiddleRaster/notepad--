@@ -43,8 +43,8 @@ Test FileNewTests[] = {
             edit.SetText(L"File->New opens 'do you want to save the changes?' dialog box if dirty:  cancel case");
 
             main.FileNew();
-            auto fileDirtyDialog = main.GetFileDirtyDialog();
-            fileDirtyDialog.PressCancel();
+            auto fileDirtyMessageBox = main.GetFileDirtyMessageBox();
+            fileDirtyMessageBox.PressCancel();
 
             Assert::AreEqual(L"File->New opens 'do you want to save the changes?' dialog box if dirty:  cancel case", edit.GetText());
             
@@ -60,8 +60,8 @@ Test FileNewTests[] = {
             edit.SetText(L"File->New opens 'do you want to save the changes?' dialog box if dirty:  no case");
 
             main.FileNew();
-            auto fileDirtyDialog = main.GetFileDirtyDialog();
-            fileDirtyDialog.ClickDontSave();
+            auto fileDirtyMessageBox = main.GetFileDirtyMessageBox();
+            fileDirtyMessageBox.ClickDontSave();
 
             Assert::AreEqual(L"", edit.GetText());
 
@@ -77,8 +77,8 @@ Test FileNewTests[] = {
             edit.SetText(L"File->New opens 'do you want to save the changes?' dialog box if dirty:  yes case");
 
             main.FileNew();
-            auto fileDirtyDialog = main.GetFileDirtyDialog();
-            fileDirtyDialog.PressSave();
+            auto fileDirtyMessageBox = main.GetFileDirtyMessageBox();
+            fileDirtyMessageBox.PressSave();
 
             auto saveAsDlg = main.FindExistingFileSaveAsDialogBox();
             saveAsDlg.Cancel();

@@ -78,16 +78,16 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 //
-IDD_EXITCONFIRM DIALOGEX 0, 0, 220, 70
-STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Notepad--"
-FONT 8, "MS Shell Dlg"
-BEGIN
-    LTEXT           "Do you want to save the changes?",IDC_STATIC,10,10,200,8
-    PUSHBUTTON      "Save",IDC_SAVE,30,40,50,14
-    PUSHBUTTON      "Don't Save",IDC_DONTSAVE,85,40,70,14
-    PUSHBUTTON      "Cancel",IDCANCEL,160,40,50,14
-END
+//IDD_EXITCONFIRM DIALOGEX 0, 0, 220, 70
+//STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+//CAPTION "Notepad--"
+//FONT 8, "MS Shell Dlg"
+//BEGIN
+//    LTEXT           "Do you want to save the changes?",IDC_STATIC,10,10,200,8
+//    PUSHBUTTON      "Save",IDC_SAVE,30,40,50,14
+//    PUSHBUTTON      "Don't Save",IDC_DONTSAVE,85,40,70,14
+//    PUSHBUTTON      "Cancel",IDCANCEL,160,40,50,14
+//END
 // DESIGNINFO
 //
 

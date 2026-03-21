@@ -19,10 +19,10 @@ Test ExitTests[] = {
             notepad.MarkAsDirty();
             notepad.TryExit();
 
-            auto dialog = notepad.GetFileDirtyDialog();
-            Assert::AreEqual(std::wstring(L"Do you want to save the changes?"), dialog.GetStaticMessage(), "Exit dialog prompt text mismatch");
-
-            dialog.ClickDontSave();
+            auto messageBox = notepad.GetFileDirtyMessageBox();
+            Assert::AreEqual(std::wstring(L"Do you want to save changes to Untitled?"), messageBox.GetStaticMessage(), "Exit dialog prompt text mismatch");
+    
+            messageBox.ClickDontSave();
         }
     },
     { std::string("Exiting when dirty then Save writes file"), []()
@@ -33,8 +33,8 @@ Test ExitTests[] = {
             editField.SetText(text);
             notepad.TryExit();
 
-            auto dialog = notepad.GetFileDirtyDialog();
-            dialog.PressSave();
+            auto messageBox = notepad.GetFileDirtyMessageBox();
+            messageBox.PressSave();
 
             std::filesystem::path filePath = FileUtils::GetTempFilename(L"notepad--exit-save.txt");
 
@@ -53,8 +53,8 @@ Test ExitTests[] = {
             editField.SetText(text);
             notepad.TryExit();
 
-            auto dialog = notepad.GetFileDirtyDialog();
-            dialog.PressCancel();
+            auto messageBox = notepad.GetFileDirtyMessageBox();
+            messageBox.PressCancel();
 
             Assert::IsTrue(notepad.IsRunning(), "Notepad-- exited after Cancel");
             Assert::AreEqual(std::wstring(text), editField.GetText(), "Edit text changed after Cancel");

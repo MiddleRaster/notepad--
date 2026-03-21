@@ -19,8 +19,6 @@
 #define IDI_SMALL_NOTEPAD       121
 
 #define IDC_NOTEPAD             109
-#define IDC_SAVE               1001
-#define IDC_DONTSAVE           1002
 #define IDC_MYICON              2
 #ifndef IDC_STATIC
 #define IDC_STATIC             -1

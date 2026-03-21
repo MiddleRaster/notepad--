@@ -137,32 +137,32 @@ namespace TestAutomation
 {
     using namespace std::chrono_literals;
 
-    class FileDirtyDialog
+    class FileDirtyMessageBox
     {
         void ClickButton(int id)
         {
-            HWND control = GetDlgItem(dialog, id);
+            HWND control = GetDlgItem(messageBox, id);
             Assert::AreNotEqual(nullptr, control, "Button not found");
             SendMessage(control, BM_CLICK, 0, 0);
         }
 
-        HWND dialog;
+        HWND messageBox;
     public:
-        FileDirtyDialog(DWORD pid)
+        FileDirtyMessageBox(DWORD pid)
         {
-            dialog = WindowUtils::WaitForWindow(5s, [&pid]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{ pid }, WindowFinder::Has::ClassName{ L"#32770" }); });
-            Assert::AreNotEqual(nullptr, dialog, "Exit dialog not found");
+            messageBox = WindowUtils::WaitForWindow(5s, [&pid]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}); });
+            Assert::AreNotEqual(nullptr, messageBox, "Exit dialog not found");
         }
         std::wstring GetStaticMessage() const
-        {
-            HWND prompt = FindWindowExW(dialog, nullptr, L"Static", nullptr);
+        {   // get the static control that's not an icon
+            HWND prompt = WindowFinder::FindDesiredChildWindow(messageBox, WindowFinder::Has::ClassName(L"Static"), WindowFinder::Has::NotStyle(SS_ICON));
             Assert::AreNotEqual(nullptr, prompt, "Exit dialog prompt not found");
             wchar_t promptText[128]{};
             GetWindowTextW(prompt, promptText, static_cast<int>(std::size(promptText)));
             return promptText;
         }
-        void ClickDontSave() { ClickButton(IDC_DONTSAVE); }
-        void PressSave    () { ClickButton(IDC_SAVE); }
+        void ClickDontSave() { ClickButton(IDNO); }
+        void PressSave    () { ClickButton(IDYES); }
         void PressCancel  () { ClickButton(IDCANCEL); }
     };
 
@@ -441,7 +441,7 @@ namespace TestAutomation
             SendMessageW(edit, EM_SETMODIFY, 0, 0);
         }
 
-        FileDirtyDialog GetFileDirtyDialog()
+        FileDirtyMessageBox GetFileDirtyMessageBox()
         {
             return {GetProcessId(proc.hProcess)};
         }
