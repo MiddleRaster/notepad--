@@ -449,11 +449,27 @@ namespace TestAutomation
             HWND edit = FindWindowExW(hwnd, nullptr, L"Edit", nullptr);
             Assert::AreNotEqual(nullptr, edit, "Edit control not found");
 
-            // if untitled and clean
-            if (GetTitle() == L"Untitled")
-            if (SendMessageW(edit, EM_GETMODIFY, 0, 0) == 0)
-            {
-                SaveAs();
+            bool clean = SendMessageW(edit, EM_GETMODIFY, 0, 0) == 0;
+            bool titled = GetTitle() != L"Untitled";
+
+            if (!titled && clean) {
+                PostMessageW(hwnd, WM_COMMAND, IDM_SAVE, 0);
+                return;
+            }
+            if ( titled && clean) {
+                PostMessageW(hwnd, WM_COMMAND, IDM_SAVE, 0);
+
+                // no dialog should come up (how long should I wait for something that isn't going to happen?)
+                HWND dialog = WindowUtils::WaitForWindow(125ms, [&]() { return WindowFinder::FindDesiredChildWindow(hwnd, WindowFinder::Has::ClassName{L"#32770"}); });
+                Assert::AreEqual(nullptr, dialog, "no dialogBoxes should have popped up");
+                return;
+            }
+            if (!titled && !clean) {
+                PostMessageW(hwnd, WM_COMMAND, IDM_SAVE, 0);
+                return;
+            }
+            if ( titled && !clean) {
+                PostMessageW(hwnd, WM_COMMAND, IDM_SAVE, 0);
                 return;
             }
         }
@@ -467,7 +483,7 @@ namespace TestAutomation
         }
         SaveAsDialog FindExistingFileSaveAsDialogBox()
         {
-            HWND saveAs = WindowUtils::WaitForWindow(5s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{ pid }, WindowFinder::Has::ClassName{ L"#32770" }, WindowFinder::Has::EitherChildClass{ L"DUIViewWndClassName", L"DirectUIHWND" }); });
+            HWND saveAs = WindowUtils::WaitForWindow(5s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Has::EitherChildClass{ L"DUIViewWndClassName", L"DirectUIHWND" }); });
             Assert::AreNotEqual(nullptr, saveAs, "Save As dialog not found");
             return {saveAs};
         }
@@ -478,7 +494,7 @@ namespace TestAutomation
         }
         OpenDialog FindExistingOpenDialog()
         {
-            HWND openDlg = WindowUtils::WaitForWindow(1s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{ pid }, WindowFinder::Has::ClassName{ L"#32770" }, WindowFinder::Has::EitherChildClass{ L"DUIViewWndClassName", L"DirectUIHWND" }); });
+            HWND openDlg = WindowUtils::WaitForWindow(1s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Has::EitherChildClass{ L"DUIViewWndClassName", L"DirectUIHWND" }); });
             Assert::AreNotEqual(nullptr, openDlg, "File Open dialog not found");
             return {openDlg};
         }

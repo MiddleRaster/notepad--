@@ -12,7 +12,7 @@
 class MessageHandler
 {
     HWND edit{};
-    std::wstring Title{L"Untitled"};
+    std::filesystem::path FilePath{};
 
     bool LoadFileToEdit(HWND hWnd, const wchar_t* path)
     {
@@ -83,6 +83,21 @@ class MessageHandler
         }
         return ret;
     }
+    void SaveFilePrivate(HWND hWnd, const wchar_t* filePath)
+    {
+        if (SaveEditTextToFile(hWnd, filePath))
+        {
+            SendMessageW(edit, EM_SETMODIFY, 0, 0); // clear the dirty flag, until the user types again.
+
+            std::wstring title = std::filesystem::path{filePath}.filename().wstring();
+            if (!title.empty())
+                SetWindowTextW(hWnd, title.c_str());
+
+            FilePath = filePath; // save filePath for "File->Save" (and pre-populating SaveAs dialog)
+        }
+        else
+            MessageBoxW(hWnd, L"Failed to save file.", L"Notepad--", MB_OK | MB_ICONERROR);
+    }
 
     int Handle_WM_CREATE(HWND hWnd)
     {
@@ -121,7 +136,10 @@ class MessageHandler
 
     auto GetWantToSaveChangedMessageBoxChoice(HWND hWnd)
     {
-        return MessageBoxW(hWnd, std::format(L"Do you want to save changes to {}?", Title).c_str(), L"Notepad--", MB_YESNOCANCEL | MB_ICONEXCLAMATION);
+        std::wstring filename = FilePath.filename();
+        if (filename == L"")
+            filename = L"Untitled";
+        return MessageBoxW(hWnd, std::format(L"Do you want to save changes to {}?", filename).c_str(), L"Notepad--", MB_YESNOCANCEL | MB_ICONEXCLAMATION);
     }
     bool IsDirty() const
     {
@@ -148,10 +166,13 @@ public:
 
     void Handle_FileSave(HWND hWnd)
     {
-        if ((Title == L"Untitled") && !IsDirty())
-            Handle_FileSaveAs(hWnd);
-        else
-            ;
+        bool titled = FilePath.has_filename();
+        bool clean  = !IsDirty();
+
+             if (!titled &&  clean) Handle_FileSaveAs(hWnd);
+        else if ( titled &&  clean) return; // noop
+        else if (!titled && !clean) Handle_FileSaveAs(hWnd);
+        else if ( titled && !clean) SaveFilePrivate(hWnd, FilePath.c_str());
     }
 
     void Handle_FileSaveAs(HWND hWnd)
@@ -165,20 +186,8 @@ public:
         ofn.lpstrFilter  = L"Text Files (*.txt)\0*.txt\0All Files (*.*)\0*.*\0";
         ofn.nFilterIndex = 1;
         ofn.Flags        = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST;
-
         if (GetSaveFileNameW(&ofn))
-        {
-            if (SaveEditTextToFile(hWnd, filePath))
-            {
-                SendMessageW(edit, EM_SETMODIFY, 0, 0); // clear the dirty flag, until the user types again.
-
-                std::wstring title = std::filesystem::path{ filePath }.filename().wstring();
-                if (!title.empty())
-                    SetWindowTextW(hWnd, title.c_str());
-            }
-            else
-                MessageBoxW(hWnd, L"Failed to save file.", L"Notepad--", MB_OK | MB_ICONERROR);
-        }
+            SaveFilePrivate(hWnd, filePath);
     }
     void Handle_Exit(HWND hWnd)
     {
@@ -256,6 +265,7 @@ public:
                 break;
             }
         }
+        FilePath.clear();
         SetWindowTextW(hWnd, L"Untitled");
         SendMessageW(edit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(L""));
         SendMessageW(edit, EM_SETMODIFY, 0, 0);

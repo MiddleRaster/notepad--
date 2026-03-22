@@ -183,15 +183,84 @@ Test FileSaveTests[] = {
             saveAsDlg.SaveFile(tempFile);
 
             auto contents = FileUtils::ReadFileUtf8(tempFile);
-            Assert::AreEqual(L"", contents, "there should be nothing in the file");
+            FileUtils::DeleteFileWithRetry(tempFile);
 
+            Assert::AreEqual(L"", contents, "there should be nothing in the file");
             Assert::AreEqual(L"FileSave.txt", main.GetTitle(), "title bar should be updated with new name but wasn't");
 
-            FileUtils::DeleteFileWithRetry(tempFile);
             main.ExitViaMenu();
         }
     },
-    //{ std::string("File->Save when untitled and dirty displays SaveAs dialog"), []() { Assert::Fail("notimplemented yet"); } },
-    //{ std::string("File->Save when   titled and clean is no-op"              ), []() { Assert::Fail("notimplemented yet"); } },
-    //{ std::string("File->Save when   titled and dirty saves to existing file"), []() { Assert::Fail("notimplemented yet"); } },
+    { std::string("File->Save when untitled and dirty displays SaveAs dialog"), []()
+        {
+            const wchar_t* text = L"File->Save when untitled and dirty displays SaveAs dialog";
+
+            TestAutomation::MainWindow main;
+            main.GetEditField().SetText(text);
+
+            main.Save();
+            auto saveAsDlg = main.FindExistingFileSaveAsDialogBox();
+
+            auto tempFile = FileUtils::GetTempFilename(L"FileSave.txt");
+            saveAsDlg.SaveFile(tempFile);
+
+            auto contents = FileUtils::ReadFileUtf8(tempFile);
+            FileUtils::DeleteFileWithRetry(tempFile);
+
+            Assert::AreEqual(text, contents, "contents of the file should be the same as before");
+            Assert::AreEqual(L"FileSave.txt", main.GetTitle(), "title bar should be updated with new name but wasn't");
+
+            main.ExitViaMenu();
+        }
+    },
+    { std::string("File->Save when   titled and clean is no-op"), []()
+        {
+            TestAutomation::MainWindow main;
+            main.Save();
+            auto saveAsDlg = main.FindExistingFileSaveAsDialogBox();
+
+            auto tempFile = FileUtils::GetTempFilename(L"FileSave.txt");
+            saveAsDlg.SaveFile(tempFile);
+
+            // at this point, titled and clean
+            main.Save();
+
+            auto contents = FileUtils::ReadFileUtf8(tempFile);
+            FileUtils::DeleteFileWithRetry(tempFile);
+            Assert::AreEqual(L"", contents, "there should be nothing in the file");
+            Assert::AreEqual(L"FileSave.txt", main.GetTitle(), "title bar should be updated with new name but wasn't");
+
+            main.ExitViaMenu();
+        }
+    },
+    { std::string("File->Save when   titled and dirty saves to existing file"), []()
+        {
+            TestAutomation::MainWindow main;
+
+            main.Save();
+            auto saveAsDlg = main.FindExistingFileSaveAsDialogBox();
+
+            auto tempFile = FileUtils::GetTempFilename(L"FileSave.txt");
+            saveAsDlg.SaveFile(tempFile);
+
+            std::this_thread::sleep_for(100ms); // there's a race: after notepad-- writes the file, it then changes the title; only then can we read it
+            Assert::AreEqual(L"FileSave.txt", main.GetTitle(), "title bar should have been updated with filename");
+
+            const wchar_t* text = L"File->Save when   titled and dirty saves to existing file";
+            main.GetEditField().SetText(text);
+
+            // at this point, titled and dirty:  Save just saves to existing file
+            main.Save();
+
+            std::this_thread::sleep_for(250ms); // there's a race between when notepad-- writes the file and we read it.
+
+            std::wstring contents = FileUtils::ReadFileUtf8(tempFile);
+            FileUtils::DeleteFileWithRetry(tempFile);
+
+            Assert::AreEqual(text, contents, "new contents should have been written to file");
+            Assert::AreEqual(L"FileSave.txt", main.GetTitle(), "title bar should not have changed");
+            
+            main.ExitViaMenu();
+        }
+    },
 };
