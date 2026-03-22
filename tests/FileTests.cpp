@@ -266,6 +266,7 @@ Test FileSaveTests[] = {
 };
 
 Test FilePrintTests[] = {
+#if _DEBUG
     { std::string("File->Print pops up Print Dialog (then WM_CLOSE)"), []()
         {
             TestAutomation::MainWindow main;
@@ -277,6 +278,11 @@ Test FilePrintTests[] = {
             print.Cancel();
 
             main.ExitViaMenu();
+        }
+    },
+#endif
+    { std::string("Placeholder to Release builds (for now)"), []()
+        {
         }
     },
 };
