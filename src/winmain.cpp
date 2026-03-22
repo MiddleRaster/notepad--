@@ -47,11 +47,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE /*hPrevInstan
     wcex.cbWndExtra    = 0;
     wcex.hInstance     = hInstance;
     wcex.hIcon         = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_NOTEPAD));
+    wcex.hIconSm       = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_NOTEPAD));
     wcex.hCursor       = LoadCursor(nullptr, IDC_ARROW);
     wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wcex.lpszMenuName  = MAKEINTRESOURCEW(IDC_NOTEPAD);
     wcex.lpszClassName = szWindowClass;
-    wcex.hIconSm       = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL_NOTEPAD));
     RegisterClassExW(&wcex);
 
     HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
