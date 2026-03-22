@@ -67,7 +67,7 @@ Test EditFieldTests[] = {
             edit.SetText(text); // this DOES set the dirty flag (unlike sending WM_SETTEXT)
             Assert::AreEqual(std::wstring(text), edit.GetText(), "Edit field text mismatch");
 
-            proc.ClearDirtyFlag();
+            proc.GetEditField().ClearDirtyFlag();
             proc.ExitViaMenu();
         }
     },

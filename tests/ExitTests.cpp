@@ -16,7 +16,7 @@ Test ExitTests[] = {
     { std::string("Exiting when dirty pops up DialogBox; click 'Don't Save'"), []()
         {
             TestAutomation::MainWindow notepad;
-            notepad.MarkAsDirty();
+            notepad.GetEditField().MarkAsDirty();
             notepad.TryExit();
 
             auto messageBox = notepad.GetFileDirtyMessageBox();
@@ -59,7 +59,7 @@ Test ExitTests[] = {
             Assert::IsTrue(notepad.IsRunning(), "Notepad-- exited after Cancel");
             Assert::AreEqual(std::wstring(text), editField.GetText(), "Edit text changed after Cancel");
 
-            notepad.ClearDirtyFlag();
+            notepad.GetEditField().ClearDirtyFlag();
             notepad.TryExit();
         }
     },

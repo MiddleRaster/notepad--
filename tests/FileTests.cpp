@@ -34,7 +34,7 @@ Test FileNewTests[] = {
 
             Assert::AreEqual(L"File->New opens 'do you want to save the changes?' dialog box if dirty:  cancel case", edit.GetText());
             
-            main.ClearDirtyFlag();
+            main.GetEditField().ClearDirtyFlag();
             main.ExitViaMenu();
         }
     },
@@ -51,7 +51,7 @@ Test FileNewTests[] = {
 
             Assert::AreEqual(L"", edit.GetText());
 
-            main.ClearDirtyFlag();
+            main.GetEditField().ClearDirtyFlag();
             main.ExitViaMenu();
         }
     },
@@ -73,7 +73,7 @@ Test FileNewTests[] = {
 
             Assert::AreEqual(L"", edit.GetText());
 
-            main.ClearDirtyFlag();
+            main.GetEditField().ClearDirtyFlag();
             main.ExitViaMenu();
         }
     },

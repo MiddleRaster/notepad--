@@ -32,11 +32,9 @@ namespace WindowFinder
                 return std::wcscmp(cls, className.c_str()) == 0;
             }
         };
-        class NotStyle
+        struct NotStyle
         {
             DWORD notThisStyle{};
-        public:
-            NotStyle(DWORD dw) : notThisStyle(dw) {}
             bool operator()(HWND hwnd) const
             {
                 DWORD style = GetWindowLong(hwnd, GWL_STYLE);

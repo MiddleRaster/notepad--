@@ -144,6 +144,16 @@ namespace Poll
             std::this_thread::sleep_for(step);
         }
     }
+    void While(std::chrono::milliseconds timeout, std::chrono::milliseconds step, auto&& pred)
+    {
+        const auto deadline = std::chrono::steady_clock::now() + timeout;
+        while (std::chrono::steady_clock::now() < deadline)
+        {
+            if (!pred())
+                return;
+            std::this_thread::sleep_for(step);
+        }
+    }
 }
 
 namespace TestAutomation
@@ -168,7 +178,7 @@ namespace TestAutomation
         }
         std::wstring GetStaticMessage() const
         {   // get the static control that's not an icon
-            HWND prompt = WindowFinder::FindDesiredChildWindow(messageBox, WindowFinder::Has::ClassName(L"Static"), WindowFinder::Has::NotStyle(SS_ICON));
+            HWND prompt = WindowFinder::FindDesiredChildWindow(messageBox, WindowFinder::Has::ClassName(L"Static"), WindowFinder::Has::NotStyle{SS_ICON});
             Assert::AreNotEqual(nullptr, prompt, "Exit dialog prompt not found");
             wchar_t promptText[128]{};
             GetWindowTextW(prompt, promptText, static_cast<int>(std::size(promptText)));
@@ -211,13 +221,15 @@ namespace TestAutomation
         {
             HWND dlgEdit = WindowUtils::WaitForWindow(1s, [&]() {return FindOpenFileEdit(); });
             Assert::AreNotEqual(nullptr, dlgEdit, "File Open edit control not found");
-            Assert::IsTrue(SendMessageW(dlgEdit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(filePath.c_str())) != 0, "Failed to set File Open filename");
+            
+            auto ret = SendMessageW(dlgEdit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(filePath.c_str()));
+            Assert::AreNotEqual(0, ret, "Failed to set File Open filename");
 
             HWND okButton = GetDlgItem(openDlg, IDOK);
             Assert::AreNotEqual(nullptr, okButton, "File Open OK button not found");
             SendMessageW(okButton, BM_CLICK, 0, 0);
 
-            Poll::Until(1s, 1ms, [this]() { return !IsWindow(openDlg); });
+            Poll::While(1s, 1ms, [this]() { return IsWindow(openDlg); });
         }
         void PressCancel()
         {
@@ -225,8 +237,7 @@ namespace TestAutomation
             Assert::AreNotEqual(nullptr, cancel, "File Open's Cancel button not found");
 
             SendMessageW(cancel, BM_CLICK, 0, 0);
-
-            Poll::Until(1s, 1ms, [this]() { return !IsWindow(openDlg); });
+            Poll::While(1s, 1ms, [this]() { return IsWindow(openDlg); });
         }
     };
     class SaveAsDialog : private CommonFileDialogUtils
@@ -242,26 +253,20 @@ namespace TestAutomation
 
             HWND okButton = GetDlgItem(saveAs, IDOK);
             Assert::AreNotEqual(nullptr, okButton, "Save As OK button not found");
+            
             SendMessageW(okButton, BM_CLICK, 0, 0);
+            Poll::While(1s, 1ms, [this]() { return IsWindow(saveAs); });
 
-            const auto dialogDeadline = std::chrono::steady_clock::now() + 5s;
-            while (std::chrono::steady_clock::now() < dialogDeadline && IsWindow(saveAs))
-                std::this_thread::sleep_for(50ms);
-
-            const auto fileDeadline = std::chrono::steady_clock::now() + 5s;
-            while (std::chrono::steady_clock::now() < fileDeadline && !std::filesystem::exists(fileName))
-                std::this_thread::sleep_for(50ms);
+            Poll::Until(1s, 1ms, [&fileName]() { return std::filesystem::exists(fileName); });
             Assert::IsTrue(std::filesystem::exists(fileName), "Save As did not create the file");
         }
         void Cancel()
         {
             HWND cancelButton = GetDlgItem(saveAs, IDCANCEL);
             Assert::AreNotEqual(nullptr, cancelButton, "Cancel button not found");
-            SendMessageW(cancelButton, BM_CLICK, 0, 0);
 
-            const auto dialogDeadline = std::chrono::steady_clock::now() + 5s;
-            while (std::chrono::steady_clock::now() < dialogDeadline && IsWindow(saveAs))
-                std::this_thread::sleep_for(50ms);
+            SendMessageW(cancelButton, BM_CLICK, 0, 0);
+            Poll::While(1s, 1ms, [this]() { return IsWindow(saveAs); });
         }
     };
 
@@ -284,6 +289,8 @@ namespace TestAutomation
             buffer.resize(static_cast<size_t>(length));
             return buffer;
         }
+        void MarkAsDirty   () { SendMessageW(edit, EM_SETMODIFY, TRUE,  0); }
+        void ClearDirtyFlag() { SendMessageW(edit, EM_SETMODIFY, FALSE, 0); }
     };
 
     class ModalMessageBox
@@ -404,26 +411,15 @@ namespace TestAutomation
                 TerminateProcess(proc.hProcess, 0);
         }
 
-        bool IsRunning() const
-        {
-            return IsWindow(hwnd);
-        }
+        bool IsRunning() const { return IsWindow(hwnd); }
         std::wstring GetTitle() const
         {
             wchar_t title[256]{};
             Assert::IsTrue(GetWindowTextW(hwnd, title, static_cast<int>(std::size(title))) > 0, "Failed to read window title");
             return title;
         }
-
-        void FileNew()
-        {
-            PostMessageW(hwnd, WM_COMMAND, IDM_NEW, 0);
-        }
-
-        void TryExit()
-        {
-            PostMessageW(hwnd, WM_COMMAND, IDM_EXIT, 0);
-        }
+        void FileNew() { PostMessageW(hwnd, WM_COMMAND, IDM_NEW, 0); }
+        void TryExit() { PostMessageW(hwnd, WM_COMMAND, IDM_EXIT, 0); }
         void ExitViaMenu()
         {
             HMENU menu = GetMenu(hwnd);
@@ -448,23 +444,7 @@ namespace TestAutomation
             invokeThread.join();
         }
 
-        void MarkAsDirty(const std::wstring& dirty = L"Dirty")
-        {
-            HWND edit = FindWindowExW(hwnd, nullptr, L"Edit", nullptr);
-            Assert::AreNotEqual(nullptr, edit, "Edit control not found");
-            for (wchar_t ch : dirty)
-                SendMessageW(edit, WM_CHAR, ch, 1);
-        }
-        void ClearDirtyFlag()
-        {
-            HWND edit = FindWindowExW(hwnd, nullptr, L"Edit", nullptr);
-            SendMessageW(edit, EM_SETMODIFY, 0, 0);
-        }
-
-        FileDirtyMessageBox GetFileDirtyMessageBox()
-        {
-            return {GetProcessId(proc.hProcess)};
-        }
+        FileDirtyMessageBox GetFileDirtyMessageBox() { return {GetProcessId(proc.hProcess)}; }
         EditField GetEditField()
         {
             HWND edit = FindWindowExW(hwnd, nullptr, L"Edit", nullptr);
@@ -482,15 +462,12 @@ namespace TestAutomation
             PostMessageW(hwnd, WM_COMMAND, IDM_SAVEAS, 0);
             return FindExistingFileSaveAsDialogBox();
         }
-        void FileOpen()
-        {
-            PostMessageW(hwnd, WM_COMMAND, IDM_OPEN, 0);
-        }
         OpenDialog FindExistingOpenDialog()
         {
             HWND openDlg = WindowUtils::WaitForWindow(1s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{ pid }, WindowFinder::Has::ClassName{ L"#32770" }, WindowFinder::Has::EitherChildClass{ L"DUIViewWndClassName", L"DirectUIHWND" }); });
             Assert::AreNotEqual(nullptr, openDlg, "File Open dialog not found");
             return {openDlg};
         }
+        void FileOpen() { PostMessageW(hwnd, WM_COMMAND, IDM_OPEN, 0); }
     };
 }
