@@ -10,6 +10,7 @@
 #define IDM_OPEN                112
 #define IDM_SAVE                113
 #define IDM_SAVEAS              114
+#define IDM_PRINT               115
 #define IDM_EXIT                120
 #define IDM_ABOUT               200
 

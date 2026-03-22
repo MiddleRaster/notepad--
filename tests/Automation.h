@@ -310,6 +310,14 @@ namespace TestAutomation
             onDismissed(); // let MainWindow peer know that the modal messagebox is gone, so it can look for the main window
         }
     };
+    struct PrintDialog
+    {
+        HWND printDlg;
+        void Cancel()
+        {
+            PostMessage(printDlg, WM_CLOSE, 0, 0);
+        }
+    };
 
     class MainWindow
     {
@@ -474,5 +482,39 @@ namespace TestAutomation
             return {openDlg};
         }
         void FileOpen() { PostMessageW(hwnd, WM_COMMAND, IDM_OPEN, 0); }
+
+        PrintDialog Print()
+        {
+            PostMessageW(hwnd, WM_COMMAND, IDM_PRINT, 0);
+            std::this_thread::sleep_for(200ms);
+
+            struct Finder
+            {
+                HWND hwnd{};
+            } finder;
+            EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL
+                        {
+                            auto* finder = reinterpret_cast<Finder*>(lParam);
+
+                            // output classname
+                            wchar_t cls[256]{};
+                            GetClassNameW(hwnd, cls, static_cast<int>(std::size(cls)));
+                      
+                            wchar_t cap[512]{};
+                            SendMessageW(hwnd, WM_GETTEXT, (WPARAM)512, (LPARAM)cap);
+
+                            if (std::wcscmp(cls, L"ApplicationFrameWindow") == 0)
+                            if (std::wcscmp(cap, L"Printing from Win32 application - Print") == 0)
+                            {
+                                finder->hwnd = hwnd;
+                                return FALSE; // found it!
+                            }
+                            return TRUE; // continue enumeration
+                        }, reinterpret_cast<LPARAM>(&finder));
+
+            HWND printDlg = finder.hwnd;
+            Assert::AreNotEqual(nullptr, printDlg, "Print dialog not found");
+            return {printDlg};
+        }
     };
 }

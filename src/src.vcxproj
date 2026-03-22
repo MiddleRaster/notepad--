@@ -131,6 +131,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="MessageHandler.h" />
+    <ClInclude Include="PrintEngine.h" />
     <ClInclude Include="Resource.h" />
   </ItemGroup>
   <ItemGroup>

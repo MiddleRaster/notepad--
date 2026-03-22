@@ -264,3 +264,19 @@ Test FileSaveTests[] = {
         }
     },
 };
+
+Test FilePrintTests[] = {
+    { std::string("File->Print pops up Print Dialog (then WM_CLOSE)"), []()
+        {
+            TestAutomation::MainWindow main;
+            auto edit = main.GetEditField();
+            edit.SetText(L"Hi");
+            edit.ClearDirtyFlag();
+
+            auto print = main.Print();
+            print.Cancel();
+
+            main.ExitViaMenu();
+        }
+    },
+};

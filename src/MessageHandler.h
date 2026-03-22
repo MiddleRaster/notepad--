@@ -8,6 +8,7 @@
 #include <shellapi.h>
 
 #include "Resource.h"
+#include "PrintEngine.h"
 
 class MessageHandler
 {
@@ -197,6 +198,30 @@ public:
         if (GetSaveFileNameW(&ofn))
             SaveFilePrivate(hWnd, filePath);
     }
+
+    void Handle_Print(HWND hWnd)
+    {
+        PRINTDLGW pd{};
+        pd.lStructSize = sizeof(pd);
+        pd.hwndOwner   = hWnd;
+        pd.Flags       = PD_RETURNDC | PD_NOPAGENUMS | PD_NOSELECTION;
+        if (!PrintDlgW(&pd))
+            return;
+
+        const LRESULT length = SendMessageW(edit, WM_GETTEXTLENGTH, 0, 0);
+        std::wstring text(static_cast<size_t>(length) + 1, L'\0');
+        SendMessageW(edit, WM_GETTEXT, static_cast<WPARAM>(text.size()), reinterpret_cast<LPARAM>(text.data()));
+        text.resize(static_cast<size_t>(length));
+
+        DOCINFOW di{};
+        di.cbSize      = sizeof(di);
+        di.lpszDocName = L"Notepad--";
+        StartDocW(pd.hDC, &di);
+        PrintEngine::PrintToHdc(pd.hDC, text);
+        EndDoc(pd.hDC);
+        DeleteDC(pd.hDC);
+    }
+
     void Handle_Exit(HWND hWnd)
     {
         if (!IsDirty())
