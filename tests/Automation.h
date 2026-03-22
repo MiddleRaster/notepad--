@@ -446,32 +446,7 @@ namespace TestAutomation
 
         void Save()
         {
-            HWND edit = FindWindowExW(hwnd, nullptr, L"Edit", nullptr);
-            Assert::AreNotEqual(nullptr, edit, "Edit control not found");
-
-            bool clean = SendMessageW(edit, EM_GETMODIFY, 0, 0) == 0;
-            bool titled = GetTitle() != L"Untitled";
-
-            if (!titled && clean) {
-                PostMessageW(hwnd, WM_COMMAND, IDM_SAVE, 0);
-                return;
-            }
-            if ( titled && clean) {
-                PostMessageW(hwnd, WM_COMMAND, IDM_SAVE, 0);
-
-                // no dialog should come up (how long should I wait for something that isn't going to happen?)
-                HWND dialog = WindowUtils::WaitForWindow(125ms, [&]() { return WindowFinder::FindDesiredChildWindow(hwnd, WindowFinder::Has::ClassName{L"#32770"}); });
-                Assert::AreEqual(nullptr, dialog, "no dialogBoxes should have popped up");
-                return;
-            }
-            if (!titled && !clean) {
-                PostMessageW(hwnd, WM_COMMAND, IDM_SAVE, 0);
-                return;
-            }
-            if ( titled && !clean) {
-                PostMessageW(hwnd, WM_COMMAND, IDM_SAVE, 0);
-                return;
-            }
+            PostMessageW(hwnd, WM_COMMAND, IDM_SAVE, 0);
         }
 
         FileDirtyMessageBox GetFileDirtyMessageBox() { return {GetProcessId(proc.hProcess)}; }

@@ -169,10 +169,18 @@ public:
         bool titled = FilePath.has_filename();
         bool clean  = !IsDirty();
 
-             if (!titled &&  clean) Handle_FileSaveAs(hWnd);
-        else if ( titled &&  clean) return; // noop
-        else if (!titled && !clean) Handle_FileSaveAs(hWnd);
-        else if ( titled && !clean) SaveFilePrivate(hWnd, FilePath.c_str());
+        // 4 cases:
+        // !titled &  clean => Handle_FileSaveAs(hWnd);
+        //  titled &  clean => return; // noop
+        // !titled & !clean => Handle_FileSaveAs(hWnd);
+        //  titled & !clean => SaveFilePrivate(hWnd, FilePath.c_str());
+
+        if (titled && clean)
+            return;
+        if (!titled)
+            Handle_FileSaveAs(hWnd);
+        else
+            SaveFilePrivate(hWnd, FilePath.c_str());
     }
 
     void Handle_FileSaveAs(HWND hWnd)
