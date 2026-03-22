@@ -62,7 +62,8 @@ class MessageHandler
         text.resize(static_cast<size_t>(length));
         const int utf8Size = WideCharToMultiByte(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), nullptr, 0, nullptr, nullptr);
         if (utf8Size == 0)
-            return false;
+            if (length > 0) // ok if it's a 0-byte file
+                return false;
 
         std::vector<char> utf8(static_cast<size_t>(utf8Size) + 3);
         utf8[0] = static_cast<char>(0xEF);
@@ -144,6 +145,14 @@ public:
     }
 
     void Handle_WM_SIZE(int width, int height) { MoveWindow(edit, 0, 0, width, height, TRUE); }
+
+    void Handle_FileSave(HWND hWnd)
+    {
+        if ((Title == L"Untitled") && !IsDirty())
+            Handle_FileSaveAs(hWnd);
+        else
+            ;
+    }
 
     void Handle_FileSaveAs(HWND hWnd)
     {

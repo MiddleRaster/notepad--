@@ -171,3 +171,27 @@ Test FileOpenTests[] = {
         }
     },
 };
+
+Test FileSaveTests[] = {
+    { std::string("File->Save when untitled and clean displays SaveAs dialog"), []()
+        {
+            TestAutomation::MainWindow main;
+            main.Save();
+            auto saveAsDlg = main.FindExistingFileSaveAsDialogBox();
+
+            auto tempFile = FileUtils::GetTempFilename(L"FileSave.txt");
+            saveAsDlg.SaveFile(tempFile);
+
+            auto contents = FileUtils::ReadFileUtf8(tempFile);
+            Assert::AreEqual(L"", contents, "there should be nothing in the file");
+
+            Assert::AreEqual(L"FileSave.txt", main.GetTitle(), "title bar should be updated with new name but wasn't");
+
+            FileUtils::DeleteFileWithRetry(tempFile);
+            main.ExitViaMenu();
+        }
+    },
+    //{ std::string("File->Save when untitled and dirty displays SaveAs dialog"), []() { Assert::Fail("notimplemented yet"); } },
+    //{ std::string("File->Save when   titled and clean is no-op"              ), []() { Assert::Fail("notimplemented yet"); } },
+    //{ std::string("File->Save when   titled and dirty saves to existing file"), []() { Assert::Fail("notimplemented yet"); } },
+};

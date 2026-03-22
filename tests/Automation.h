@@ -444,6 +444,20 @@ namespace TestAutomation
             invokeThread.join();
         }
 
+        void Save()
+        {
+            HWND edit = FindWindowExW(hwnd, nullptr, L"Edit", nullptr);
+            Assert::AreNotEqual(nullptr, edit, "Edit control not found");
+
+            // if untitled and clean
+            if (GetTitle() == L"Untitled")
+            if (SendMessageW(edit, EM_GETMODIFY, 0, 0) == 0)
+            {
+                SaveAs();
+                return;
+            }
+        }
+
         FileDirtyMessageBox GetFileDirtyMessageBox() { return {GetProcessId(proc.hProcess)}; }
         EditField GetEditField()
         {

@@ -37,6 +37,7 @@ BEGIN
     BEGIN
         MENUITEM "&New",                 IDM_NEW
         MENUITEM "&Open...",             IDM_OPEN
+        MENUITEM "&Save",                IDM_SAVE
         MENUITEM "Save &As...",          IDM_SAVEAS
         MENUITEM "E&xit",                IDM_EXIT
     END

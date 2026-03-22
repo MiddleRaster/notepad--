@@ -19,6 +19,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {   // Parse the menu selections:
         case IDM_NEW:      MessageHandler::GetHandler(hWnd).Handle_FileNew(hWnd);   break;
         case IDM_OPEN:     MessageHandler::GetHandler(hWnd).Handle_FileOpen(hWnd);  break;
+        case IDM_SAVE  :   MessageHandler::GetHandler(hWnd).Handle_FileSave(hWnd);  break;
         case IDM_SAVEAS:   MessageHandler::GetHandler(hWnd).Handle_FileSaveAs(hWnd);break;
         case IDM_ABOUT:    MessageHandler::GetHandler(hWnd).Handle_About(hWnd);     break;
         case IDM_EXIT:     MessageHandler::GetHandler(hWnd).Handle_Exit(hWnd);      break;
