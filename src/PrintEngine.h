@@ -35,14 +35,13 @@ struct PrintEngineT : private Base
                 hi = mid - 1;
         }
 
-        // If we didn't reach end of segment, back up to the last space or hyphen
-        //if (fit < len)
-        //{
-        //    std::wstring_view sv(text, fit);
-        //    auto pos = sv.find_last_of(L" -\t/");
-        //    if (pos != std::wstring_view::npos) fit = static_cast<int>(pos) + 1;
-        //}
-
+        if (fit < len) // If we didn't reach end of segment, back up to the last space or hyphen, etc.
+        {
+            std::wstring_view sv(text, fit);
+            auto pos = sv.find_last_of(L" -\t/");
+            if (pos != std::wstring_view::npos)
+                fit = static_cast<int>(pos) + 1;
+        }
         return fit;
     }
 
