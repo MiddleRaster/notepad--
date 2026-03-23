@@ -294,24 +294,23 @@ Test FilePrintTests[] = {
 #if _DEBUG // GitHub uses much lower resolution screen, as expected.
     { std::string("No spaces just breaks the word at the right spot"), []()
         {
-            struct TextOutParams
+            static int count;
+            static struct TextOutParams
             {
                 int x, y;
                 std::wstring string;
                 int c;
-            };
-            static std::vector<TextOutParams> params;
-            static int count;
+            } params[2];
 
-            params.clear();
-            count = 0;
+            count     = 0;
+            params[0] = {};
+            params[1] = {};
 
             struct TestBase
             {
                 static BOOL TextOutW(HDC /*hdc*/, int x, int y, LPCWSTR lpString, int c)
                 {
-                    params.push_back(TextOutParams{x,y,std::wstring(lpString,c),c});
-                    ++count;
+                    params[count++] = {x,y,std::wstring(lpString,c),c};
                     return TRUE;
                 }
             };
@@ -330,8 +329,6 @@ Test FilePrintTests[] = {
             Assert::AreEqual(  64, params[1].y, "no margin set: should be height of a line");
             Assert::AreEqual(   1, params[1].c, "one character on the next line");
             Assert::AreEqual(L"X", params[1].string, "the string should consist of a single 'X'");
-
-            params.clear();
         }
     },
 #endif
