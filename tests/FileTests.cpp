@@ -319,14 +319,17 @@ Test FilePrintTests[] = {
             HDC     memdc  = CreateCompatibleDC(hdc);
             HBITMAP bmp    = CreateCompatibleBitmap(hdc, 1920, 1080);
             HBITMAP oldBmp = (HBITMAP)SelectObject(memdc, bmp);
+            HFONT  oldFont = (HFONT)SelectObject(memdc, GetStockObject(SYSTEM_FIXED_FONT)); // who knows what GitHub's Actions use by default? Select my own
 
             // set up memdc (optional, but makes it easier to see)
             RECT r{0,0,1920,1080};
             FillRect(memdc, &r, (HBRUSH)GetStockObject(WHITE_BRUSH));
 
-            PrintEngineT<TestBase>::PrintToHdc(memdc, std::wstring(129 + 1, L'W') + L'X');
+            PrintEngineT<TestBase>::PrintToHdc(memdc, std::wstring(228, L'W') + L'X');
 
             BitBlt(hdc, 0, 0, 1920, 1080, memdc, 0, 0, SRCCOPY); // for visual inspection
+            
+            SelectObject(memdc, oldFont);
             SelectObject(memdc, oldBmp);
             DeleteObject(bmp);
             DeleteDC    (memdc);
@@ -336,10 +339,10 @@ Test FilePrintTests[] = {
 
             Assert::AreEqual(  48, params[0].x, "no margin set: should be at pixel 0");
             Assert::AreEqual(  48, params[0].y, "no margin set: should be height of a line");
-            Assert::AreEqual( 130, params[0].c, "a full line is 137 W characters");
+            Assert::AreEqual( 228, params[0].c, "a full line is 228 W characters (with the SYSTEN_FIXED_FONT)");
 
             Assert::AreEqual(  48, params[1].x, "no margin set: should be at pixel 0");
-            Assert::AreEqual(  64, params[1].y, "no margin set: should be height of a line");
+            Assert::AreEqual(  63, params[1].y, "no margin set: should be height of a line");
             Assert::AreEqual(   1, params[1].c, "one character on the next line");
             Assert::AreEqual(L"X", params[1].string, "the string should consist of a single 'X'");
         }
