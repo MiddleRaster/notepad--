@@ -5,14 +5,19 @@
 #include <windows.h>
 #include <string>
 
+#include "MockableFunction.h"
+
+
 struct Empty
 {
-
+    MOCKABLE_FUNCTION(TextOutW)
 };
 
 template <typename Base>
 struct PrintEngineT : private Base
 {
+    using Base::TextOutW;
+
     static int CalcLineBreak(HDC hdc, const wchar_t* text, int len, int pageWidthPx)
     {
         int lo = 1, hi = len, fit = 1;
@@ -43,10 +48,12 @@ struct PrintEngineT : private Base
     {
         TEXTMETRICW tm{};
         GetTextMetricsW(hdc, &tm);
-        int lineH = tm.tmHeight + tm.tmExternalLeading;
-        int pageW = GetDeviceCaps(hdc, HORZRES);
-        int pageH = GetDeviceCaps(hdc, VERTRES);
-        int linesPerPg = lineH > 0 ? pageH / lineH : 1;
+        int lineH      = tm.tmHeight + tm.tmExternalLeading;
+        int marginX    = GetDeviceCaps(hdc, LOGPIXELSX)/2;  // 0.5" margin in pixels
+        int marginY    = GetDeviceCaps(hdc, LOGPIXELSY)/2;
+        int pageW      = GetDeviceCaps(hdc, HORZRES) - 2*marginX;
+        int pageH      = GetDeviceCaps(hdc, VERTRES) - 2*marginY;
+        int linesPerPg = lineH > 0 ? pageH/lineH : 1;
 
         int pos = 0;
         int n = static_cast<int>(text.size());
@@ -62,7 +69,7 @@ struct PrintEngineT : private Base
             while (seg < logEnd || seg == pos)
             {
                 int fit = CalcLineBreak(hdc, text.c_str() + seg, logEnd - seg, pageW);
-                TextOutW(hdc, 0, lineOnPage * lineH, text.c_str() + seg, fit);
+                TextOutW(hdc, marginX, marginY + lineOnPage*lineH, text.c_str() + seg, fit);
                 seg += fit;
 
                 if (++lineOnPage >= linesPerPg)
@@ -73,7 +80,6 @@ struct PrintEngineT : private Base
                 }
                 if (seg >= logEnd) break;
             }
-
             pos = logEnd + 1;
         }
         EndPage(hdc);

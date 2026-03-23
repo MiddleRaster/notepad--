@@ -1,4 +1,7 @@
-﻿import std;
+﻿
+#include "..\src\PrintEngine.h"
+
+import std;
 import tdd20;
 
 #include <windows.h>
@@ -281,8 +284,53 @@ Test FilePrintTests[] = {
         }
     },
 #endif
-    { std::string("Placeholder to Release builds (for now)"), []()
+    { std::string("Just measuring my screen (for now) including margins"), []()
         {
+            HDC hdc = GetDC(nullptr);
+            PrintEngine::PrintToHdc(hdc, std::wstring(129, L'W') + L'X');
+            ReleaseDC(nullptr, hdc);
+        }
+    },
+    { std::string("No spaces just breaks the word at the right spot"), []()
+        {
+            struct TextOutParams
+            {
+                int x, y;
+                std::wstring string;
+                int c;
+            };
+            static std::vector<TextOutParams> params;
+            static int count;
+
+            params.clear();
+            count = 0;
+
+            struct TestBase
+            {
+                static BOOL TextOutW(HDC /*hdc*/, int x, int y, LPCWSTR lpString, int c)
+                {
+                    params.push_back(TextOutParams{x,y,std::wstring(lpString,c),c});
+                    ++count;
+                    return TRUE;
+                }
+            };
+
+            HDC hdc = GetDC(nullptr);
+            PrintEngineT<TestBase>::PrintToHdc(hdc, std::wstring(129+1, L'W') + L'X');
+            ReleaseDC(nullptr, hdc);
+
+            Assert::AreEqual(   2, count, "should have been one line break => two lines");
+
+            Assert::AreEqual(  48, params[0].x, "no margin set: should be at pixel 0");
+            Assert::AreEqual(  48, params[0].y, "no margin set: should be height of a line");
+            Assert::AreEqual( 130, params[0].c, "a full line is 137 W characters");
+
+            Assert::AreEqual(  48, params[1].x, "no margin set: should be at pixel 0");
+            Assert::AreEqual(  64, params[1].y, "no margin set: should be height of a line");
+            Assert::AreEqual(   1, params[1].c, "one character on the next line");
+            Assert::AreEqual(L"X", params[1].string, "the string should consist of a single 'X'");
+
+            params.clear();
         }
     },
 };
