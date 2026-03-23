@@ -291,7 +291,6 @@ Test FilePrintTests[] = {
             ReleaseDC(nullptr, hdc);
         }
     },
-#if _DEBUG // GitHub uses much lower resolution screen, as expected.
     { std::string("No spaces just breaks the word at the right spot"), []()
         {
             static int count;
@@ -308,16 +307,30 @@ Test FilePrintTests[] = {
 
             struct TestBase
             {
-                static BOOL TextOutW(HDC /*hdc*/, int x, int y, LPCWSTR lpString, int c)
+                static BOOL TextOutW(HDC hdc, int x, int y, LPCWSTR lpString, int c)
                 {
                     params[count++] = {x,y,std::wstring(lpString,c),c};
+                    ::TextOutW(hdc, x, y, lpString, c); // call the real one so I can see something on-screen
                     return TRUE;
                 }
             };
 
-            HDC hdc = GetDC(nullptr);
-            PrintEngineT<TestBase>::PrintToHdc(hdc, std::wstring(129+1, L'W') + L'X');
-            ReleaseDC(nullptr, hdc);
+            HDC     hdc    = CreateDC(L"DISPLAY", nullptr, nullptr, nullptr);
+            HDC     memdc  = CreateCompatibleDC(hdc);
+            HBITMAP bmp    = CreateCompatibleBitmap(hdc, 1920, 1080);
+            HBITMAP oldBmp = (HBITMAP)SelectObject(memdc, bmp);
+
+            // set up memdc (optional, but makes it easier to see)
+            RECT r{0,0,1920,1080};
+            FillRect(memdc, &r, (HBRUSH)GetStockObject(WHITE_BRUSH));
+
+            PrintEngineT<TestBase>::PrintToHdc(memdc, std::wstring(129 + 1, L'W') + L'X');
+
+            BitBlt(hdc, 0, 0, 1920, 1080, memdc, 0, 0, SRCCOPY); // for visual inspection
+            SelectObject(memdc, oldBmp);
+            DeleteObject(bmp);
+            DeleteDC    (memdc);
+            DeleteDC    (hdc);
 
             Assert::AreEqual(   2, count, "should have been one line break => two lines");
 
@@ -331,5 +344,4 @@ Test FilePrintTests[] = {
             Assert::AreEqual(L"X", params[1].string, "the string should consist of a single 'X'");
         }
     },
-#endif
 };
