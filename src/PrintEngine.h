@@ -11,12 +11,14 @@
 struct Empty
 {
     MOCKABLE_FUNCTION(TextOutW)
+    MOCKABLE_FUNCTION(GetTextExtentPoint32W)
 };
 
 template <typename Base>
 struct PrintEngineT : private Base
 {
     using Base::TextOutW;
+    using Base::GetTextExtentPoint32W;
 
     static int CalcLineBreak(HDC hdc, const wchar_t* text, int len, int pageWidthPx)
     {

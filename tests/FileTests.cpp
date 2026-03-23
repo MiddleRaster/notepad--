@@ -313,25 +313,27 @@ Test FilePrintTests[] = {
                     ::TextOutW(hdc, x, y, lpString, c); // call the real one so I can see something on-screen
                     return TRUE;
                 }
+                static  BOOL GetTextExtentPoint32W(HDC, LPCWSTR, int c, SIZE* size)
+                {
+                    size->cx = c*24; // fixed 10px per character
+                    size->cy = 32;
+                    return TRUE;
+                }
             };
 
             HDC        hdc = CreateDC(L"DISPLAY", nullptr, nullptr, nullptr);
             HDC      memdc = CreateCompatibleDC(hdc);
             HBITMAP    bmp = CreateCompatibleBitmap(hdc, 1920, 1080);
             HBITMAP oldBmp = (HBITMAP)SelectObject(memdc, bmp);
-            HFONT     font = CreateFontW(-16, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, FIXED_PITCH | FF_MODERN, L"Courier New");
-            HFONT  oldFont = (HFONT)SelectObject(memdc, font);
 
             // set up memdc (optional, but makes it easier to see)
             RECT r{0,0,1920,1080};
             FillRect(memdc, &r, (HBRUSH)GetStockObject(WHITE_BRUSH));
 
-            PrintEngineT<TestBase>::PrintToHdc(memdc, std::wstring(182, L'W') + L'X');
+            PrintEngineT<TestBase>::PrintToHdc(memdc, std::wstring(76, L'W') + L'X'); // (1920 - 48 - 48)/24 = 76 chars fit in a line
 
             BitBlt(hdc, 0, 0, 1920, 1080, memdc, 0, 0, SRCCOPY); // for visual inspection
             
-            SelectObject(memdc, oldFont);
-            DeleteObject(font);
             SelectObject(memdc, oldBmp);
             DeleteObject(bmp);
             DeleteDC    (memdc);
@@ -341,10 +343,10 @@ Test FilePrintTests[] = {
 
             Assert::AreEqual(  48, params[0].x, "should be same as margin");
             Assert::AreEqual(  48, params[0].y, "should be same as margin");
-            Assert::AreEqual( 182, params[0].c, "a full line is 182 W characters (with the font created above)");
+            Assert::AreEqual(  76, params[0].c, "a full line is 76 characters");
 
             Assert::AreEqual(  48, params[1].x, "should be same as margin");
-            Assert::AreEqual(  66, params[1].y, "should be margin plus height of a line");
+            Assert::AreEqual(  64, params[1].y, "should be margin plus height of a line");
             Assert::AreEqual(   1, params[1].c, "one character on the next line");
             Assert::AreEqual(L"X", params[1].string, "the string should consist of a single 'X'");
         }
