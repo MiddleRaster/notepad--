@@ -309,6 +309,8 @@ Test FilePrintTests[] = {
             {
                 static BOOL TextOutW(HDC hdc, int x, int y, LPCWSTR lpString, int c)
                 {
+                std::wcout << lpString << std::endl;
+
                     if (count < 2)
                         params[count] = {x,y,std::wstring(lpString,c),c}; // so it doesn't crash
                     ++count;
