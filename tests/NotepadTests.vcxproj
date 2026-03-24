@@ -150,6 +150,7 @@
     <ClCompile Include="MainTests.cpp" />
     <ClCompile Include="ExitTests.cpp" />
     <ClCompile Include="modules\tdd20.ixx" />
+    <ClCompile Include="PrintTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="WindowFinder.h" />
