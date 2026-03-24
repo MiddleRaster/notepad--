@@ -130,6 +130,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="FileIO.h" />
     <ClInclude Include="MessageHandler.h" />
     <ClInclude Include="MockableFunction.h" />
     <ClInclude Include="PrintEngine.h" />
