@@ -307,7 +307,7 @@ struct TextOutParams
 };
 static int count;
 static TextOutParams params[2];
-struct TestBase
+struct TestBase : Empty
 {
     static int GetDeviceCaps(HDC hdc, int index)
     {
@@ -459,6 +459,30 @@ Test FilePrintTests[] = {
             Assert::AreEqual(L'\t', params[0].string[180], "there should be tab right here");
 
             Assert::AreEqual(L"ABCDEFGHIJKL", params[1].string);
+        }
+    },
+    { std::string("each page of a multi-page doc has at most 54 lines"), []()
+        {
+            std::wstring text;
+            for(int j=0; j<107;   ++j) // (1080 - 48 - 48)/(66-48) = 54.66666
+            for(int i=0; i<182/5; ++i)
+                text += L"abcd ";
+
+            static int pages;
+            pages = 0;
+            struct TestBase : Empty
+            {
+                static int EndPage(HDC)
+                {
+                    return ++pages;
+                }
+            };
+
+            Blitter blitter;
+            PrintEngineT<TestBase>::PrintToHdc(blitter.GetDC(), text);
+            blitter.BitBlt();
+
+            Assert::AreEqual(2, pages, "107 lines of text is 2 pages, exactly");
         }
     },
 };
