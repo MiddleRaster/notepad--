@@ -13,6 +13,7 @@ struct Empty
     MOCKABLE_FUNCTION(TextOutW)
     MOCKABLE_FUNCTION(GetDeviceCaps)
     MOCKABLE_FUNCTION(EndPage)
+    MOCKABLE_FUNCTION(GetTextMetricsW)
 };
 
 template <typename Base>
@@ -21,6 +22,7 @@ struct PrintEngineT : private Base
     using Base::TextOutW;
     using Base::GetDeviceCaps;
     using Base::EndPage;
+    using Base::GetTextMetricsW;
 
     static int CalcLineBreak(HDC hdc, const wchar_t* text, int len, int pageWidthPx)
     {

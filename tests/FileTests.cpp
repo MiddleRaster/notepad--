@@ -472,9 +472,12 @@ Test FilePrintTests[] = {
             pages = 0;
             struct TestBase : Empty
             {
-                static int EndPage(HDC)
+                static int EndPage(HDC) { return ++pages; }
+                static BOOL GetTextMetricsW(HDC, TEXTMETRICW* tm)
                 {
-                    return ++pages;
+                    *tm = TEXTMETRICW{};
+                    tm->tmHeight = 18;
+                    return TRUE;
                 }
             };
 
