@@ -42,6 +42,10 @@ BEGIN
         MENUITEM "&Print...",            IDM_PRINT
         MENUITEM "E&xit",                IDM_EXIT
     END
+    POPUP "&Edit"
+    BEGIN
+        MENUITEM "&Undo",                IDM_UNDO
+    END
     POPUP "&Help"
     BEGIN
         MENUITEM "&About ...",           IDM_ABOUT

@@ -14,6 +14,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_CREATE: return MessageHandler::CreateHandlerAndEditWindow(hWnd);
     case WM_NCDESTROY:     MessageHandler::DestroyHandler(hWnd);                                            break;
     case WM_SIZE:          MessageHandler::GetHandler(hWnd).Handle_WM_SIZE(LOWORD(lParam), HIWORD(lParam)); break;
+    case WM_INITMENUPOPUP: MessageHandler::GetHandler(hWnd).Handle_MenuPopUp(reinterpret_cast<HMENU>(wParam)); break;
     case WM_COMMAND:
         switch (LOWORD(wParam))
         {   // Parse the menu selections:

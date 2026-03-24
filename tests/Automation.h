@@ -319,6 +319,48 @@ namespace TestAutomation
         }
     };
 
+
+    class SubMenu
+    {
+        HWND hwnd;
+        HMENU subMenu;
+    public:
+        SubMenu(HWND hwnd, HMENU menu) : hwnd(hwnd), subMenu(menu) {}
+
+        bool IsMenuItemEnabled(UINT id)
+        {
+            SendMessage(hwnd, WM_INITMENUPOPUP, (WPARAM)subMenu, 0);
+
+            UINT state = GetMenuState(subMenu, id, MF_BYCOMMAND);
+            Assert::AreNotEqual((UINT)(-1), state, "menu item not found");
+            return !(state & MF_GRAYED) && !(state & MF_DISABLED);
+        }
+    };
+
+    class Menu
+    {
+        SubMenu GetMenu(const std::string& name) const
+        {
+            int count = GetMenuItemCount(menu);
+            for (int i=0; i<count; ++i)
+            {
+                char buf[64]{};
+                GetMenuStringA(menu, i, buf, ARRAYSIZE(buf), MF_BYPOSITION);
+                if (buf == name)
+                    return {hwnd, GetSubMenu(menu, i)};
+            }
+            Assert::Fail(name + " menu item not found");
+            return {nullptr, nullptr};
+        }
+
+        HWND hwnd;
+        HMENU menu;
+    public:
+        Menu(HWND hwnd, HMENU hmenu) : hwnd(hwnd), menu(hmenu) {}
+        SubMenu GetFileMenu() const { return GetMenu("&File"); }
+        SubMenu GetEditMenu() const { return GetMenu("&Edit"); }
+    };
+
     class MainWindow
     {
         static std::wstring GetModuleDirectory()
@@ -430,14 +472,14 @@ namespace TestAutomation
         void TryExit() { PostMessageW(hwnd, WM_COMMAND, IDM_EXIT, 0); }
         void ExitViaMenu()
         {
-            HMENU menu = GetMenu(hwnd);
+            HMENU menu = ::GetMenu(hwnd);
             Assert::IsTrue(menu != nullptr, "Menu handle was null");
             SendMessageW(hwnd, WM_INITMENU, reinterpret_cast<WPARAM>(menu), 0);
             SendMessageW(hwnd, WM_COMMAND, IDM_EXIT, 0);
         }
         void ExitViaMenuPopUp()
         {
-            HMENU menu = GetMenu(hwnd);
+            HMENU menu = ::GetMenu(hwnd);
             Assert::IsTrue(menu != nullptr, "Menu handle was null");
             HMENU fileMenu = GetSubMenu(menu, 0);
             Assert::IsTrue(fileMenu != nullptr, "File menu handle was null");
@@ -515,6 +557,10 @@ namespace TestAutomation
             HWND printDlg = finder.hwnd;
             Assert::AreNotEqual(nullptr, printDlg, "Print dialog not found");
             return {printDlg};
+        }
+        Menu GetMenu()
+        {
+            return {hwnd, ::GetMenu(hwnd)};
         }
     };
 }

@@ -281,6 +281,11 @@ public:
                 MessageBoxW(hWnd, L"Failed to open file.", L"Notepad--", MB_OK | MB_ICONERROR);
         }
     }
+    void Handle_MenuPopUp(HMENU hPopup)
+    {
+        EnableMenuItem(hPopup, IDM_UNDO, MF_BYCOMMAND | /* (undoBuffer.empty() ? */ MF_GRAYED /*: MF_ENABLED) */ );
+    }
+
     void Handle_FileNew(HWND hWnd)
     {
         if (IsDirty())
