@@ -23,4 +23,31 @@ Test EditTests[] = {
             main.ExitViaMenu();
         }
     },
+    { std::string("After typing some text, the Edit->Undo menu item is not grayed out"), []()
+        {
+            TestAutomation::MainWindow main;
+            auto edit = main.GetEditField();
+            edit.SetText(L"After typing some text, the Edit->Undo menu item is not grayed out");
+            auto editMenu = main.GetMenu().GetEditMenu();
+            edit.ClearDirtyFlag();
+            Assert::IsTrue(editMenu.IsMenuItemEnabled(IDM_UNDO));
+            main.ExitViaMenu();
+        }
+    },
+    { std::string("After typing a char, undo reverts to blank"), []()
+        {
+            TestAutomation::MainWindow main;
+            auto edit = main.GetEditField();
+            edit.SetText(L"X");
+            Assert::AreEqual(L"X", edit.GetText(), "should have single X character");
+
+            main.Undo();
+            edit.ClearDirtyFlag();
+            Poll::While(100ms, 1ms, [&edit]() { return edit.GetText() == L"X"; });
+
+            Assert::AreEqual(L"", edit.GetText(), "should have applied Undo");
+
+            main.ExitViaMenu();
+        }
+    },
 };

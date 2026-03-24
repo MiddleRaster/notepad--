@@ -17,7 +17,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_INITMENUPOPUP: MessageHandler::GetHandler(hWnd).Handle_MenuPopUp(reinterpret_cast<HMENU>(wParam)); break;
     case WM_COMMAND:
         switch (LOWORD(wParam))
-        {   // Parse the menu selections:
+        {
+        case IDC_EDITFIELD:
+            if (HIWORD(wParam) == EN_CHANGE) MessageHandler::GetHandler(hWnd).Handle_EN_CHANGE(hWnd);
+            break;
         case IDM_NEW:      MessageHandler::GetHandler(hWnd).Handle_FileNew(hWnd);   break;
         case IDM_OPEN:     MessageHandler::GetHandler(hWnd).Handle_FileOpen(hWnd);  break;
         case IDM_SAVE  :   MessageHandler::GetHandler(hWnd).Handle_FileSave(hWnd);  break;
@@ -25,6 +28,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         case IDM_PRINT:    MessageHandler::GetHandler(hWnd).Handle_Print(hWnd);     break;
         case IDM_ABOUT:    MessageHandler::GetHandler(hWnd).Handle_About(hWnd);     break;
         case IDM_EXIT:     MessageHandler::GetHandler(hWnd).Handle_Exit(hWnd);      break;
+        case IDM_UNDO:     MessageHandler::GetHandler(hWnd).Handle_Undo(hWnd);      break;
         default:           return DefWindowProc(hWnd, message, wParam, lParam);
         }
         break;

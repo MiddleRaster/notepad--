@@ -562,5 +562,9 @@ namespace TestAutomation
         {
             return {hwnd, ::GetMenu(hwnd)};
         }
+        void Undo()
+        {
+            PostMessageW(hwnd, WM_COMMAND, IDM_UNDO, 0);
+        }
     };
 }

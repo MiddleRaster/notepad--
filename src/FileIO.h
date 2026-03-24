@@ -47,7 +47,7 @@ struct FileIO
         return ret;
     }
 
-    static bool SaveEditTextToFile(HWND hWnd, HWND edit, const wchar_t* path)
+    static bool SaveEditTextToFile(HWND edit, const wchar_t* path)
     {
         const LRESULT length = SendMessageW(edit, WM_GETTEXTLENGTH, 0, 0);
         std::wstring text(static_cast<size_t>(length) + 1, L'\0');
@@ -79,7 +79,7 @@ struct FileIO
     
     static void SaveFile(HWND hWnd, HWND edit, const wchar_t* filePath, std::filesystem::path& FilePath)
     {
-        if (SaveEditTextToFile(hWnd, edit, filePath))
+        if (SaveEditTextToFile(edit, filePath))
         {
             SendMessageW(edit, EM_SETMODIFY, 0, 0); // clear the dirty flag, until the user types again.
 

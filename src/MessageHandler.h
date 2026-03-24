@@ -10,15 +10,17 @@
 #include "Resource.h"
 #include "FileIO.h"
 #include "PrintEngine.h"
+#include "Undo.h"
 
 class MessageHandler
 {
     HWND edit{};
     std::filesystem::path FilePath{};
+    Undo undo;
 
     int Handle_WM_CREATE(HWND hWnd)
     {
-        edit = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL, 0, 0, 0, 0, hWnd, nullptr, GetModuleHandle(nullptr), nullptr);
+        edit = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD|WS_VISIBLE|WS_VSCROLL|WS_HSCROLL|ES_LEFT|ES_MULTILINE|ES_AUTOVSCROLL|ES_AUTOHSCROLL, 0, 0, 0, 0, hWnd, reinterpret_cast<HMENU>(IDC_EDITFIELD), GetModuleHandle(nullptr), nullptr);
         if (edit == nullptr)
         {
             MessageBoxW(hWnd, L"Failed to create edit control. The application will now exit.", L"Notepad--", MB_OK | MB_ICONERROR);
@@ -30,6 +32,10 @@ class MessageHandler
 
         // if there's a filename on the command-line, load it up
         LoadCommandlineArgIfAny(hWnd);
+
+        // set up undo
+        undo.UpdateUndo(edit);
+
         return 0;
     }
     void Handle_WM_NCDESTROY(HWND hWnd)
@@ -197,10 +203,10 @@ public:
                 MessageBoxW(hWnd, L"Failed to open file.", L"Notepad--", MB_OK | MB_ICONERROR);
         }
     }
-    void Handle_MenuPopUp(HMENU hPopup)
-    {
-        EnableMenuItem(hPopup, IDM_UNDO, MF_BYCOMMAND | /* (undoBuffer.empty() ? */ MF_GRAYED /*: MF_ENABLED) */ );
-    }
+
+    void Handle_MenuPopUp(HMENU hPopup) { EnableMenuItem(hPopup, IDM_UNDO, MF_BYCOMMAND | (undo.CanUndo() ? MF_ENABLED : MF_GRAYED)); }
+    void Handle_EN_CHANGE(HWND) { undo.UpdateUndo(edit); }
+    void Handle_Undo     (HWND) { undo.Apply(edit); }
 
     void Handle_FileNew(HWND hWnd)
     {
