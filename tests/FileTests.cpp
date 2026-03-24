@@ -472,6 +472,14 @@ Test FilePrintTests[] = {
             pages = 0;
             struct TestBase : Empty
             {
+                static int GetDeviceCaps(HDC hdc, int index)
+                {
+                    switch(index) {
+                    case HORZRES: return 1920;
+                    case VERTRES: return 1080;
+                    default:      return ::GetDeviceCaps(hdc, index);
+                    }
+                }
                 static int EndPage(HDC) { return ++pages; }
                 static BOOL GetTextMetricsW(HDC, TEXTMETRICW* tm)
                 {
