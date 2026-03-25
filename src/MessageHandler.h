@@ -55,6 +55,7 @@ class MessageHandler
             return;
         if (!FileIO::LoadFileToEdit(hWnd, edit, args.argv[1]))
             MessageBoxW(hWnd, L"Failed to open file.", L"Notepad--", MB_OK | MB_ICONERROR);
+        FilePath = args.argv[1];
     }
 
     auto GetWantToSaveChangedMessageBoxChoice(HWND hWnd)

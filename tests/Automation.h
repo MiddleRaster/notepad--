@@ -277,6 +277,10 @@ namespace TestAutomation
         EditField(HWND hwnd) : edit(hwnd) {}
         void AppendText(const std::wstring& text)
         {
+            auto existing = GetText();
+            DWORD dw = (DWORD)existing.length();
+            SetCursorPosition(dw, dw);
+
             for (auto c : text)
                 SendMessageW(edit, WM_CHAR, c, 1);
         }
@@ -312,6 +316,10 @@ namespace TestAutomation
             SendMessage(edit, EM_GETSEL, (WPARAM)&s, (LPARAM)&e);
             start = s;
             end   = e;
+        }
+        void SetCursorPosition(DWORD start, DWORD end)
+        {
+            SendMessage(edit, EM_SETSEL, (WPARAM)start, (LPARAM)end);
         }
     };
 
@@ -587,6 +595,49 @@ namespace TestAutomation
         void Undo()
         {
             PostMessageW(hwnd, WM_COMMAND, IDM_UNDO, 0);
+        }
+
+        void EnsureInForeground()
+        {
+            Poll::Until(1s, 1ms, [this]()
+                { // Attach our thread's input queue to the target's, so SetForegroundWindow is not blocked by UIPI focus rules.
+                    DWORD targetTid  = GetWindowThreadProcessId(hwnd, nullptr);
+                    DWORD currentTid = GetCurrentThreadId();
+                    bool  attached   = (targetTid != currentTid) && AttachThreadInput(currentTid, targetTid, TRUE);
+
+                    SetForegroundWindow(hwnd);
+                    BringWindowToTop(hwnd);
+                    ShowWindow(hwnd, SW_RESTORE);   // un-minimize if needed
+
+                    if (attached)
+                        AttachThreadInput(currentTid, targetTid, FALSE);
+
+                    return GetForegroundWindow() == hwnd;
+                });
+            Assert::AreEqual(hwnd, GetForegroundWindow(), "failed to set Notepad-- as the foreground window");
+        }
+
+        enum KeyStates
+        {
+            None    = 0,
+            Control = 1,
+            Shift   = 2,
+            BothControlAndShift = 3,
+        };
+        void SendKey(char c, KeyStates keyStates)
+        {
+            INPUT inputs[6] = {}; // 6 is worst-case
+            UINT  count     = 0;
+            WORD  vk        = static_cast<WORD>(VkKeyScanA(c) & 0xFF);
+
+            if (keyStates & Control) { inputs[count].type = INPUT_KEYBOARD; inputs[count].ki.wVk = VK_CONTROL; inputs[count].ki.dwFlags = 0;                count++; }
+            if (keyStates & Shift)   { inputs[count].type = INPUT_KEYBOARD; inputs[count].ki.wVk = VK_SHIFT;   inputs[count].ki.dwFlags = 0;                count++; }
+                                       inputs[count].type = INPUT_KEYBOARD; inputs[count].ki.wVk = vk;         inputs[count].ki.dwFlags = 0;                count++;
+                                       inputs[count].type = INPUT_KEYBOARD; inputs[count].ki.wVk = vk;         inputs[count].ki.dwFlags = KEYEVENTF_KEYUP;  count++;
+            if (keyStates & Shift)   { inputs[count].type = INPUT_KEYBOARD; inputs[count].ki.wVk = VK_SHIFT;   inputs[count].ki.dwFlags = KEYEVENTF_KEYUP;  count++; }
+            if (keyStates & Control) { inputs[count].type = INPUT_KEYBOARD; inputs[count].ki.wVk = VK_CONTROL; inputs[count].ki.dwFlags = KEYEVENTF_KEYUP;  count++; }
+
+            SendInput(count, inputs, sizeof(INPUT));
         }
     };
 }
