@@ -4,6 +4,7 @@ I liked the old Notepad better, so recreating it here.
 
 It's a work-in-progress:
 
+2026-03-24 - Simple 1-level of undo, and tests  
 2026-03-23 - File>Print and tests, including 7 TBCI tests  
 2026-03-21 - File>Save with tests (4 cases: titled or not, clean or not)  
 2026-03-21 - File>Open with tests (if dirty, pop up SaveAs, etc.)  
