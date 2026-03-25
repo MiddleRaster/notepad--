@@ -94,6 +94,7 @@ Test AcceleratorKeyTests[] = {
             main.ExitViaMenu();
         }
     },
+#if _DEBUG
     { std::string("Ctrl-P works"), []()
         {
             TestAutomation::MainWindow main;
@@ -110,6 +111,7 @@ Test AcceleratorKeyTests[] = {
             main.ExitViaMenu();
         }
     },
+#endif
     { std::string("Ctrl-Z works"), []()
         {
             TestAutomation::MainWindow main;
