@@ -294,9 +294,9 @@ namespace TestAutomation
         bool IsDirty () const { return !!SendMessageW(edit, EM_GETMODIFY, 0, 0); }
         bool HasFocus() const
         {
-            HWND mainHWND = GetParent(edit);
-            SetForegroundWindow(mainHWND);
-            Poll::Until(1s, 1ms, [&mainHWND]() { return GetForegroundWindow() == mainHWND; });
+            HWND main = GetParent(edit);
+            SetForegroundWindow(main);
+            Poll::Until(1s, 1ms, [&main]() { return GetForegroundWindow() == main; });
             DWORD tid = GetWindowThreadProcessId(GetForegroundWindow(), nullptr);
             GUITHREADINFO gti{ sizeof(GUITHREADINFO) };
             GetGUIThreadInfo(tid, &gti);
