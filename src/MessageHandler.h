@@ -86,6 +86,7 @@ public:
     }
 
     void Handle_WM_SIZE(int width, int height) { MoveWindow(edit, 0, 0, width, height, TRUE); }
+    void Handle_Activate(int activateState) { if (activateState != WA_INACTIVE) SetFocus(edit); }
 
     void Handle_FileSave(HWND hWnd)
     {

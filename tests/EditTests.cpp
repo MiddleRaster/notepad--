@@ -12,6 +12,20 @@ namespace TDD20
     template <> inline std::string ToString(const std::nullptr_t&) { return "0x0"; }
 }
 
+Test FocusTest[] = {
+    { std::string("Whenever Notepad-- is in the foreground, the edit window has focus"), []()
+        {
+            TestAutomation::MainWindow main;
+
+            auto edit = main.GetEditField();
+            Assert::IsTrue(edit.HasFocus(), "the edit window should have focus");
+
+            main.ExitViaMenu();
+        }
+    },
+};
+
+
 Test EditTests[] = {
     { std::string("When firing up Notepad--, the Edit->Undo menu item is grayed out"), []()
         {

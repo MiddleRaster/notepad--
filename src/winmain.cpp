@@ -12,27 +12,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     switch (message)
     {
     case WM_CREATE: return MessageHandler::CreateHandlerAndEditWindow(hWnd);
-    case WM_NCDESTROY:     MessageHandler::DestroyHandler(hWnd);                                            break;
-    case WM_SIZE:          MessageHandler::GetHandler(hWnd).Handle_WM_SIZE(LOWORD(lParam), HIWORD(lParam)); break;
+    case WM_NCDESTROY:     MessageHandler::DestroyHandler(hWnd);                                               break;
+    case WM_SIZE:          MessageHandler::GetHandler(hWnd).Handle_WM_SIZE(LOWORD(lParam), HIWORD(lParam));    break;
     case WM_INITMENUPOPUP: MessageHandler::GetHandler(hWnd).Handle_MenuPopUp(reinterpret_cast<HMENU>(wParam)); break;
+    case WM_ACTIVATE:      MessageHandler::GetHandler(hWnd).Handle_Activate(LOWORD(wParam));                   break;
     case WM_COMMAND:
         switch (LOWORD(wParam))
         {
         case IDC_EDITFIELD:
-            if (HIWORD(wParam) == EN_CHANGE) MessageHandler::GetHandler(hWnd).Handle_EN_CHANGE(hWnd);
-            break;
-        case IDM_NEW:      MessageHandler::GetHandler(hWnd).Handle_FileNew(hWnd);   break;
-        case IDM_OPEN:     MessageHandler::GetHandler(hWnd).Handle_FileOpen(hWnd);  break;
-        case IDM_SAVE  :   MessageHandler::GetHandler(hWnd).Handle_FileSave(hWnd);  break;
-        case IDM_SAVEAS:   MessageHandler::GetHandler(hWnd).Handle_FileSaveAs(hWnd);break;
-        case IDM_PRINT:    MessageHandler::GetHandler(hWnd).Handle_Print(hWnd);     break;
-        case IDM_ABOUT:    MessageHandler::GetHandler(hWnd).Handle_About(hWnd);     break;
-        case IDM_EXIT:     MessageHandler::GetHandler(hWnd).Handle_Exit(hWnd);      break;
-        case IDM_UNDO:     MessageHandler::GetHandler(hWnd).Handle_Undo(hWnd);      break;
-        default:           return DefWindowProc(hWnd, message, wParam, lParam);
+            if (HIWORD(wParam) == EN_CHANGE) 
+                         MessageHandler::GetHandler(hWnd).Handle_EN_CHANGE(hWnd);  break;
+        case IDM_NEW:    MessageHandler::GetHandler(hWnd).Handle_FileNew(hWnd);    break;
+        case IDM_OPEN:   MessageHandler::GetHandler(hWnd).Handle_FileOpen(hWnd);   break;
+        case IDM_SAVE:   MessageHandler::GetHandler(hWnd).Handle_FileSave(hWnd);   break;
+        case IDM_SAVEAS: MessageHandler::GetHandler(hWnd).Handle_FileSaveAs(hWnd); break;
+        case IDM_PRINT:  MessageHandler::GetHandler(hWnd).Handle_Print(hWnd);      break;
+        case IDM_ABOUT:  MessageHandler::GetHandler(hWnd).Handle_About(hWnd);      break;
+        case IDM_EXIT:   MessageHandler::GetHandler(hWnd).Handle_Exit(hWnd);       break;
+        case IDM_UNDO:   MessageHandler::GetHandler(hWnd).Handle_Undo(hWnd);       break;
+        default:         return DefWindowProc(hWnd, message, wParam, lParam);
         }
         break;
-    case WM_DESTROY:       PostQuitMessage(0);                                      break;
+    case WM_DESTROY:       PostQuitMessage(0);                                     break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
@@ -71,7 +72,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE /*hPrevInstan
     MSG msg;
     while (GetMessage(&msg, nullptr, 0, 0))
     {
-        if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+        if (!TranslateAccelerator(hWnd, hAccelTable, &msg))
         {
             TranslateMessage(&msg);
             DispatchMessage(&msg);

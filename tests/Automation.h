@@ -289,9 +289,19 @@ namespace TestAutomation
             buffer.resize(static_cast<size_t>(length));
             return buffer;
         }
-        void MarkAsDirty   () {   SendMessageW(edit, EM_SETMODIFY, TRUE,  0); }
-        void ClearDirtyFlag() {   SendMessageW(edit, EM_SETMODIFY, FALSE,  0); }
-        bool IsDirty() { return !!SendMessageW(edit, EM_GETMODIFY, 0, 0); }
+        void MarkAsDirty   () { SendMessageW(edit, EM_SETMODIFY, TRUE,  0); }
+        void ClearDirtyFlag() { SendMessageW(edit, EM_SETMODIFY, FALSE,  0); }
+        bool IsDirty () const { return !!SendMessageW(edit, EM_GETMODIFY, 0, 0); }
+        bool HasFocus() const
+        {
+            HWND mainHWND = GetParent(edit);
+            SetForegroundWindow(mainHWND);
+            Poll::Until(1s, 1ms, [&mainHWND]() { return GetForegroundWindow() == mainHWND; });
+            DWORD tid = GetWindowThreadProcessId(GetForegroundWindow(), nullptr);
+            GUITHREADINFO gti{ sizeof(GUITHREADINFO) };
+            GetGUIThreadInfo(tid, &gti);
+            return gti.hwndFocus == edit;
+        }
     };
 
     class ModalMessageBox
