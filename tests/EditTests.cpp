@@ -50,4 +50,23 @@ Test EditTests[] = {
             main.ExitViaMenu();
         }
     },
+    { std::string("type a char, undo, type a char, undo => blank"), []()
+        {
+            TestAutomation::MainWindow main;
+            auto edit = main.GetEditField();
+            edit.SetText(L"A");
+            Poll::While(100ms, 1ms, [&edit]() { return edit.GetText() == L"A"; });
+            Assert::AreEqual(L"A", edit.GetText(), "should have single A character");
+            main.Undo();
+
+            edit.SetText(L"B");
+            Poll::While(100ms, 1ms, [&edit]() { return edit.GetText() == L"B"; });
+            Assert::AreEqual(L"B", edit.GetText(), "should have single B character");
+            main.Undo();
+
+            edit.ClearDirtyFlag();
+            Assert::AreEqual(L"", edit.GetText(), "should have applied Undo");
+            main.ExitViaMenu();
+        }
+    },
 };

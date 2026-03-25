@@ -22,7 +22,7 @@ public:
         std::wstring text(static_cast<size_t>(length) + 1, L'\0');
         SendMessageW(edit, WM_GETTEXT, static_cast<WPARAM>(text.size()), reinterpret_cast<LPARAM>(text.data()));
         text.resize(static_cast<size_t>(length));
-        WideCharToMultiByte(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), nullptr, 0, nullptr, nullptr);
+        
         UpdateUndo(text);
     }
     bool CanUndo() const { return undo.size() > 1; }
@@ -31,6 +31,7 @@ public:
         auto text = undo.front();
         undo.clear();
         ::SetWindowTextW(edit, text.c_str());
+        UpdateUndo(text);
     }
 };
 
