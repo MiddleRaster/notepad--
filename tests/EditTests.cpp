@@ -25,7 +25,6 @@ Test FocusTest[] = {
     },
 };
 
-
 Test EditTests[] = {
     { std::string("When firing up Notepad--, the Edit->Undo menu item is grayed out"), []()
         {
@@ -82,6 +81,32 @@ Test EditTests[] = {
             main.Undo();
             Poll::While(100ms, 1ms, [&edit]() { return edit.GetText() == L"B"; });
             Assert::AreEqual(L"", edit.GetText(), "should have undone single B character");
+
+            edit.ClearDirtyFlag();
+            Poll::While(100ms, 1ms, [&edit]() { return edit.IsDirty(); });
+            Assert::IsFalse(edit.IsDirty(), "edit field should not be dirty at this point");
+
+            main.ExitViaMenu();
+        }
+    },
+    { std::string("After an undo, the caret is at the end of the remaining string"), []()
+        {
+            TestAutomation::MainWindow main;
+            auto edit = main.GetEditField();
+
+            edit.SetText(L"ABCDEFG");
+            Assert::AreEqual(L"ABCDEFG", edit.GetText(), "should have ABCDEFG");
+
+            edit.AppendText(L"X");
+            main.Undo();
+            Poll::While(100ms, 1ms, [&edit]() { return edit.GetText() == L"ABCDEFG"; });
+            Assert::AreEqual(L"ABCDEFG", edit.GetText(), "should have undone the single X character");
+
+            DWORD start, end;
+            edit.GetCursorPosition(start, end);
+
+            Assert::AreEqual(start, end, "cursor start and end should be the same");
+            Assert::AreEqual(7, start, "cursor should be at the end: 7");
 
             edit.ClearDirtyFlag();
             Poll::While(100ms, 1ms, [&edit]() { return edit.IsDirty(); });

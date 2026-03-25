@@ -28,11 +28,18 @@ public:
     bool CanUndo() const { return undo.size() > 1; }
     void Apply(HWND edit)
     {
+        DWORD start, end;
+        SendMessage(edit, EM_GETSEL, (WPARAM)&start, (LPARAM)&end);
+
         auto text = undo.front();
         undo.clear();
         ::SetWindowTextW(edit, text.c_str());
         SendMessage(edit, EM_SETMODIFY, TRUE, 0); // because SetWindowTextW does NOT set the dirty flag
         UpdateUndo(text);
+
+        // put caret back
+        DWORD len = (DWORD)text.size();
+        SendMessage(edit, EM_SETSEL, min(start, len), min(end, len));
     }
 };
 

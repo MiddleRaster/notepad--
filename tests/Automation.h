@@ -275,11 +275,15 @@ namespace TestAutomation
         HWND edit;
     public:
         EditField(HWND hwnd) : edit(hwnd) {}
+        void AppendText(const std::wstring& text)
+        {
+            for (auto c : text)
+                SendMessageW(edit, WM_CHAR, c, 1);
+        }
         void SetText(const std::wstring& text)
         {
             Assert::IsTrue(SendMessageW(edit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(L"")) != 0, "Failed to clear edit field text");
-            for (auto c : text)
-                SendMessageW(edit, WM_CHAR, c, 1);
+            AppendText(text);
         }
         std::wstring GetText() const
         {
@@ -301,6 +305,13 @@ namespace TestAutomation
             GUITHREADINFO gti{ sizeof(GUITHREADINFO) };
             GetGUIThreadInfo(tid, &gti);
             return gti.hwndFocus == edit;
+        }
+        void GetCursorPosition(DWORD& start, DWORD& end)
+        {
+            DWORD s=0, e=0;
+            SendMessage(edit, EM_GETSEL, (WPARAM)&s, (LPARAM)&e);
+            start = s;
+            end   = e;
         }
     };
 
