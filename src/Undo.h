@@ -31,6 +31,7 @@ public:
         auto text = undo.front();
         undo.clear();
         ::SetWindowTextW(edit, text.c_str());
+        SendMessage(edit, EM_SETMODIFY, TRUE, 0); // because SetWindowTextW does NOT set the dirty flag
         UpdateUndo(text);
     }
 };

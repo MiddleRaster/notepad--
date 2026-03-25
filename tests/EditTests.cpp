@@ -42,11 +42,13 @@ Test EditTests[] = {
             Assert::AreEqual(L"X", edit.GetText(), "should have single X character");
 
             main.Undo();
-            edit.ClearDirtyFlag();
             Poll::While(100ms, 1ms, [&edit]() { return edit.GetText() == L"X"; });
+            Assert::AreEqual(L"", edit.GetText(), "should have undone single X character");
 
-            Assert::AreEqual(L"", edit.GetText(), "should have applied Undo");
-
+            edit.ClearDirtyFlag();
+            Poll::While(100ms, 1ms, [&edit]() { return edit.IsDirty(); });
+            Assert::IsFalse(edit.IsDirty(), "edit field should not be dirty at this point");
+            
             main.ExitViaMenu();
         }
     },
@@ -54,18 +56,23 @@ Test EditTests[] = {
         {
             TestAutomation::MainWindow main;
             auto edit = main.GetEditField();
+
             edit.SetText(L"A");
-            Poll::While(100ms, 1ms, [&edit]() { return edit.GetText() == L"A"; });
             Assert::AreEqual(L"A", edit.GetText(), "should have single A character");
             main.Undo();
+            Poll::While(100ms, 1ms, [&edit]() { return edit.GetText() == L"A"; });
+            Assert::AreEqual(L"", edit.GetText(), "should have undone single A character");
 
             edit.SetText(L"B");
-            Poll::While(100ms, 1ms, [&edit]() { return edit.GetText() == L"B"; });
             Assert::AreEqual(L"B", edit.GetText(), "should have single B character");
             main.Undo();
+            Poll::While(100ms, 1ms, [&edit]() { return edit.GetText() == L"B"; });
+            Assert::AreEqual(L"", edit.GetText(), "should have undone single B character");
 
             edit.ClearDirtyFlag();
-            Assert::AreEqual(L"", edit.GetText(), "should have applied Undo");
+            Poll::While(100ms, 1ms, [&edit]() { return edit.IsDirty(); });
+            Assert::IsFalse(edit.IsDirty(), "edit field should not be dirty at this point");
+
             main.ExitViaMenu();
         }
     },

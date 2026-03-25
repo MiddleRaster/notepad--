@@ -289,8 +289,9 @@ namespace TestAutomation
             buffer.resize(static_cast<size_t>(length));
             return buffer;
         }
-        void MarkAsDirty   () { SendMessageW(edit, EM_SETMODIFY, TRUE,  0); }
-        void ClearDirtyFlag() { SendMessageW(edit, EM_SETMODIFY, FALSE, 0); }
+        void MarkAsDirty   () {   SendMessageW(edit, EM_SETMODIFY, TRUE,  0); }
+        void ClearDirtyFlag() {   SendMessageW(edit, EM_SETMODIFY, FALSE,  0); }
+        bool IsDirty() { return !!SendMessageW(edit, EM_GETMODIFY, 0, 0); }
     };
 
     class ModalMessageBox
