@@ -558,44 +558,42 @@ namespace TestAutomation
         PrintDialog Print()
         {
             PostMessageW(hwnd, WM_COMMAND, IDM_PRINT, 0);
-            std::this_thread::sleep_for(200ms);
 
-            struct Finder
-            {
-                HWND hwnd{};
-            } finder;
-            EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL
-                        {
-                            auto* finder = reinterpret_cast<Finder*>(lParam);
+            HWND printDlg = nullptr;
+            Poll::While(2s, 10ms, [&printDlg]()
+                {
+                    struct Finder
+                    {
+                        HWND hwnd{};
+                    } finder;
+                    EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL
+                                {
+                                    auto* finder = reinterpret_cast<Finder*>(lParam);
 
-                            // output classname
-                            wchar_t cls[256]{};
-                            GetClassNameW(hwnd, cls, static_cast<int>(std::size(cls)));
+                                    // output classname
+                                    wchar_t cls[256]{};
+                                    GetClassNameW(hwnd, cls, static_cast<int>(std::size(cls)));
                       
-                            wchar_t cap[512]{};
-                            SendMessageW(hwnd, WM_GETTEXT, (WPARAM)512, (LPARAM)cap);
+                                    wchar_t cap[512]{};
+                                    SendMessageW(hwnd, WM_GETTEXT, (WPARAM)512, (LPARAM)cap);
 
-                            if (std::wcscmp(cls, L"ApplicationFrameWindow") == 0)
-                            if (std::wcscmp(cap, L"Printing from Win32 application - Print") == 0)
-                            {
-                                finder->hwnd = hwnd;
-                                return FALSE; // found it!
-                            }
-                            return TRUE; // continue enumeration
-                        }, reinterpret_cast<LPARAM>(&finder));
+                                    if (std::wcscmp(cls, L"ApplicationFrameWindow") == 0)
+                                    if (std::wcscmp(cap, L"Printing from Win32 application - Print") == 0)
+                                    {
+                                        finder->hwnd = hwnd;
+                                        return FALSE; // found it!
+                                    }
+                                    return TRUE; // continue enumeration
+                                }, reinterpret_cast<LPARAM>(&finder));
 
-            HWND printDlg = finder.hwnd;
+                    printDlg = finder.hwnd;
+                    return printDlg == nullptr;
+                });
             Assert::AreNotEqual(nullptr, printDlg, "Print dialog not found");
             return {printDlg};
         }
-        Menu GetMenu()
-        {
-            return {hwnd, ::GetMenu(hwnd)};
-        }
-        void Undo()
-        {
-            PostMessageW(hwnd, WM_COMMAND, IDM_UNDO, 0);
-        }
+        Menu GetMenu() { return {hwnd, ::GetMenu(hwnd)}; }
+        void Undo() { PostMessageW(hwnd, WM_COMMAND, IDM_UNDO, 0); }
 
         void EnsureInForeground()
         {

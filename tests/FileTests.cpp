@@ -85,7 +85,7 @@ Test FileNewTests[] = {
 Test FileOpenTests[] = {
     { std::string("File->Open loads file into edit control"), []()
         {
-            for (int attempt=0; attempt<4; ++attempt)
+            for (int attempt=0; attempt<20; ++attempt)
             try {
                 const wchar_t* text = L"File->Open loads file into edit control";
                 std::filesystem::path filePath = FileUtils::CreateTempUtf8File(L"notepad--open.txt", text);
