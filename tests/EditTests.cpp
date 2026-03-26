@@ -102,4 +102,106 @@ Test EditTests[] = {
             main.ExitViaMenu();
         }
     },
+    { std::string("If there is nothing selected, the Edit>Copy menu item is grayed out"), []()
+        {
+            TestAutomation::MainWindow main;
+            auto edit = main.GetEditField();
+            edit.SetText(L"ABCDEFG");
+            edit.ClearDirtyFlag();
+            Poll::While(100ms, 1ms, [&edit]() { return edit.IsDirty(); });
+
+            auto editMenu = main.GetMenu().GetEditMenu();
+            Assert::IsFalse(editMenu.IsMenuItemEnabled(IDM_COPY));
+
+            main.ExitViaMenu();
+        }
+    },
+    { std::string("If some text is selected, the Edit>Copy menu item is enabled"), []()
+        {
+            TestAutomation::MainWindow main;
+            auto edit = main.GetEditField();
+            edit.SetText(L"ABCDEFG");
+            edit.ClearDirtyFlag();
+            Poll::While(100ms, 1ms, [&edit]() { return edit.IsDirty(); });
+
+            edit.SetCursorPosition(2, 4);
+            auto editMenu = main.GetMenu().GetEditMenu();
+            Assert::IsTrue(editMenu.IsMenuItemEnabled(IDM_COPY));
+
+            main.ExitViaMenu();
+        }
+    },
+    { std::string("If there is nothing selected, the Edit>Cut menu item is grayed out"), []()
+        {
+            TestAutomation::MainWindow main;
+            auto edit = main.GetEditField();
+            edit.SetText(L"ABCDEFG");
+            edit.ClearDirtyFlag();
+            Poll::While(100ms, 1ms, [&edit]() { return edit.IsDirty(); });
+
+            auto editMenu = main.GetMenu().GetEditMenu();
+            Assert::IsFalse(editMenu.IsMenuItemEnabled(IDM_CUT));
+
+            main.ExitViaMenu();
+        }
+    },
+    { std::string("If some text is selected, the Edit>Cut menu item is enabled"), []()
+        {
+            TestAutomation::MainWindow main;
+            auto edit = main.GetEditField();
+            edit.SetText(L"ABCDEFG");
+            edit.ClearDirtyFlag();
+            Poll::While(100ms, 1ms, [&edit]() { return edit.IsDirty(); });
+
+            edit.SetCursorPosition(2, 4);
+            auto editMenu = main.GetMenu().GetEditMenu();
+            Assert::IsTrue(editMenu.IsMenuItemEnabled(IDM_CUT));
+
+            main.ExitViaMenu();
+        }
+    },
+    { std::string("If some text is selected and the user selects Edit->Copy, the text ends up on the clipboard"), []()
+        {
+            std::wstring droids{L"These aren't the droids you're looking for."};
+            TestAutomation::Clipboard::SetClipboardText(droids.c_str());
+
+            TestAutomation::MainWindow main;
+            auto edit = main.GetEditField();
+            edit.SetText(L"ABCDEFG");
+            edit.ClearDirtyFlag();
+            Poll::While(100ms, 1ms, [&edit]() { return edit.IsDirty(); });
+
+            edit.SetCursorPosition(2, 4);
+            auto editMenu = main.GetMenu().GetEditMenu();
+            editMenu.SelectMenuItem(IDM_COPY);
+
+            Poll::Until(1s, 1ms, [&droids]() { return TestAutomation::Clipboard::GetClipboardText() == L"CD"; });
+            Assert::AreEqual(L"CD", TestAutomation::Clipboard::GetClipboardText(), "the selection should have been copied to the clipboard");
+
+            main.ExitViaMenu();
+        }
+    },
+    { std::string("If some text is selected and the user selects Edit->Cut, the text ends up on the clipboard and is removed from the edit field"), []()
+        {
+            std::wstring droids{L"These aren't the droids you're looking for."};
+            TestAutomation::Clipboard::SetClipboardText(droids.c_str());
+
+            TestAutomation::MainWindow main;
+            auto edit = main.GetEditField();
+            edit.SetText(L"ABCDEFG");
+
+            edit.SetCursorPosition(2, 4);
+            auto editMenu = main.GetMenu().GetEditMenu();
+            editMenu.SelectMenuItem(IDM_CUT);
+
+            Poll::Until(1s, 1ms, [&droids]() { return TestAutomation::Clipboard::GetClipboardText() == L"CD"; });
+            edit.ClearDirtyFlag();
+            Poll::While(1s, 1ms, [&edit]() { return edit.IsDirty(); });
+
+            Assert::AreEqual(L"CD", TestAutomation::Clipboard::GetClipboardText(), "the selection should have been copied to the clipboard");
+            Assert::AreEqual(L"ABEFG", edit.GetText(), "two characters should have been cut from the edit field's text");
+
+            main.ExitViaMenu();
+        }
+    },
 };

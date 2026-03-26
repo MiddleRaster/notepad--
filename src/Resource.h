@@ -13,7 +13,11 @@
 #define IDM_SAVE                113
 #define IDM_SAVEAS              114
 #define IDM_PRINT               115
+
 #define IDM_UNDO                120
+#define IDM_COPY                121
+#define IDM_CUT                 122
+
 #define IDM_EXIT                190
 #define IDM_ABOUT               200
 

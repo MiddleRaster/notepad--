@@ -160,6 +160,49 @@ namespace TestAutomation
 {
     using namespace std::chrono_literals;
 
+    struct Clipboard
+    {
+        static std::wstring GetClipboardText()
+        {
+            std::wstring result;
+            if (OpenClipboard(nullptr))
+            {
+                if (HANDLE hData = GetClipboardData(CF_UNICODETEXT))
+                {
+                    if (auto* p = static_cast<wchar_t*>(GlobalLock(hData)))
+                    {
+                        result = p;
+                        GlobalUnlock(hData);
+                    }
+                }
+                CloseClipboard();
+            }
+            return result;
+        }
+        static void SetClipboardText(const std::wstring& text)
+        {
+            if (OpenClipboard(GetDesktopWindow()))
+            {
+                EmptyClipboard();
+                if (HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, (text.size() + 1) * sizeof(wchar_t)))
+                {
+                    if (auto* p = static_cast<wchar_t*>(GlobalLock(hMem)))
+                    {
+                        std::wmemcpy(p, text.data(), text.size());
+                        p[text.size()] = L'\0';
+                        GlobalUnlock(hMem);
+
+                        if (!SetClipboardData(CF_UNICODETEXT, hMem))
+                            GlobalFree(hMem); // they don't own the memory, because SetClipboardData failed. So we must free it.
+                    }
+                    else
+                        GlobalFree(hMem);
+                }
+                CloseClipboard();
+            }
+        }
+    };
+
     class FileDirtyMessageBox
     {
         void ClickButton(int id)
@@ -352,6 +395,33 @@ namespace TestAutomation
 
     class SubMenu
     {
+        static void SendKey(WORD vk, bool keyUp = false)
+        {
+            INPUT in{};
+            in.type       = INPUT_KEYBOARD;
+            in.ki.wVk     = vk;
+            in.ki.dwFlags = keyUp ? KEYEVENTF_KEYUP : 0;
+            SendInput(1, &in, sizeof(INPUT));
+        }
+        void SelectMenuItemViaKeyboard(WORD openKey,    // e.g., VK_F10 or 'E' for Edit
+                                       WORD itemKey)    // e.g., 'C' for Copy
+        {
+            SetForegroundWindow(hwnd);
+            Poll::Until(2s, 1ms, [this]() { return GetForegroundWindow() == hwnd; });
+
+            // Alt tap (not Alt+E)
+            SendKey(VK_MENU);        // Alt down
+            SendKey(VK_MENU, true);  // Alt up
+
+            // Now send mnemonic for the menu
+            SendKey(openKey);        // 'E'
+            SendKey(openKey, true);
+
+            // Now send mnemonic for the item
+            SendKey(itemKey);        // 'C'
+            SendKey(itemKey, true);
+        }
+
         HWND hwnd;
         HMENU subMenu;
     public:
@@ -364,6 +434,17 @@ namespace TestAutomation
             UINT state = GetMenuState(subMenu, id, MF_BYCOMMAND);
             Assert::AreNotEqual((UINT)(-1), state, "menu item not found");
             return !(state & MF_GRAYED) && !(state & MF_DISABLED);
+        }
+        void SelectMenuItem(UINT id)
+        {
+            switch (id)
+            {
+            case IDM_COPY: SelectMenuItemViaKeyboard('E', 'C'); break;
+            case IDM_CUT : SelectMenuItemViaKeyboard('E', 'T'); break;
+            default:
+                Assert::Fail("mapping from menu id to keyboard selection is not implemented");
+                break;
+            }
         }
     };
 
