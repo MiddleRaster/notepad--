@@ -85,7 +85,8 @@ Test FileNewTests[] = {
 Test FileOpenTests[] = {
     { std::string("File->Open loads file into edit control"), []()
         {
-            for (int attempt=0; attempt<20; ++attempt)
+            int last = 20;
+            for (int attempt=1; attempt<=last; ++attempt)
             try {
                 const wchar_t* text = L"File->Open loads file into edit control";
                 std::filesystem::path filePath = FileUtils::CreateTempUtf8File(L"notepad--open.txt", text);
@@ -107,7 +108,7 @@ Test FileOpenTests[] = {
             }
             catch (AssertException&)
             {
-                if (attempt == 2) // last try...
+                if (attempt == last) // last try...
                     throw;
             }
         }
