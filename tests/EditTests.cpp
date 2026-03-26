@@ -173,7 +173,8 @@ Test EditTests[] = {
 
             edit.SetCursorPosition(2, 4);
             auto editMenu = main.GetMenu().GetEditMenu();
-            editMenu.SelectMenuItem(IDM_COPY);
+          //editMenu.SelectMenuItem(IDM_COPY);
+            editMenu.ClickMenuItem(L"Edit", L"Copy\tCtrl+C");
 
             Poll::Until(1s, 1ms, [&droids]() { return TestAutomation::Clipboard::GetClipboardText() == L"CD"; });
             Assert::AreEqual(L"CD", TestAutomation::Clipboard::GetClipboardText(), "the selection should have been copied to the clipboard");
@@ -192,7 +193,8 @@ Test EditTests[] = {
 
             edit.SetCursorPosition(2, 4);
             auto editMenu = main.GetMenu().GetEditMenu();
-            editMenu.SelectMenuItem(IDM_CUT);
+          //editMenu.SelectMenuItem(IDM_CUT);
+            editMenu.ClickMenuItem(L"Edit", L"Cut\tCtrl+X");
 
             Poll::Until(1s, 1ms, [&droids]() { return TestAutomation::Clipboard::GetClipboardText() == L"CD"; });
             edit.ClearDirtyFlag();

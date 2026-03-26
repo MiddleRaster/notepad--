@@ -153,8 +153,10 @@
     <ClCompile Include="ExitTests.cpp" />
     <ClCompile Include="modules\tdd20.ixx" />
     <ClCompile Include="PrintTests.cpp" />
+    <ClCompile Include="UIA.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="UIA.h" />
     <ClInclude Include="WindowFinder.h" />
     <ClInclude Include="Automation.h" />
   </ItemGroup>

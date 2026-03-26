@@ -2,6 +2,7 @@
 
 #include "WindowFinder.h"
 #include "..\src\Resource.h"
+#include "UIA.h"
 
 namespace WindowFinder::Has
 {
@@ -446,6 +447,10 @@ namespace TestAutomation
                 break;
             }
         }
+        void ClickMenuItem(const std::wstring& toplevel, const std::wstring& itemName)
+        {
+            ClickMenuItemViaUIA(hwnd, toplevel.c_str(), itemName.c_str());
+        }
     };
 
     class Menu
@@ -524,10 +529,12 @@ namespace TestAutomation
     public:
         MainWindow() : proc([&](PROCESS_INFORMATION& pi) { return LaunchNotepadAndWait(pi); })
         {
+            CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
             ValidateProcAndAssignHWND();
         }
         MainWindow(const std::filesystem::path& filePath) : proc([&](PROCESS_INFORMATION& pi) { return LaunchNotepadAndWait(pi, filePath.c_str()); })
         {
+            CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
             if (std::filesystem::exists(filePath))
                 ValidateProcAndAssignHWND();
         }
@@ -540,6 +547,7 @@ namespace TestAutomation
         }
         ~MainWindow()
         {   // we need to shut down cleanly no matter what.
+            CoUninitialize();
 
             // can't throw from a dtor, ever.
             auto doNotThrow = [](auto fn) {

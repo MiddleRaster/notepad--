@@ -42,12 +42,18 @@
     <ClCompile Include="AcceleratorKeyTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="UIA.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Automation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="WindowFinder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UIA.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
