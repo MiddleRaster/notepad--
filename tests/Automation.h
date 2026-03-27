@@ -477,7 +477,18 @@ namespace TestAutomation
         SubMenu GetEditMenu() const { return GetMenu("&Edit"); }
     };
 
-    class MainWindow
+    struct COM
+    {
+        COM()
+        {
+            CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+        }
+       ~COM()
+        {
+            CoUninitialize();
+        }
+    };
+    class MainWindow : private COM
     {
         static std::wstring GetModuleDirectory()
         {
@@ -529,12 +540,10 @@ namespace TestAutomation
     public:
         MainWindow() : proc([&](PROCESS_INFORMATION& pi) { return LaunchNotepadAndWait(pi); })
         {
-            CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
             ValidateProcAndAssignHWND();
         }
         MainWindow(const std::filesystem::path& filePath) : proc([&](PROCESS_INFORMATION& pi) { return LaunchNotepadAndWait(pi, filePath.c_str()); })
         {
-            CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
             if (std::filesystem::exists(filePath))
                 ValidateProcAndAssignHWND();
         }
@@ -547,7 +556,6 @@ namespace TestAutomation
         }
         ~MainWindow()
         {   // we need to shut down cleanly no matter what.
-            CoUninitialize();
 
             // can't throw from a dtor, ever.
             auto doNotThrow = [](auto fn) {
