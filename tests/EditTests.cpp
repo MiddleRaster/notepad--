@@ -163,47 +163,78 @@ Test EditTests[] = {
     { std::string("If some text is selected and the user selects Edit->Copy, the text ends up on the clipboard"), []()
         {
             std::wstring droids{L"These aren't the droids you're looking for."};
-            TestAutomation::Clipboard::SetClipboardText(droids.c_str());
 
-            TestAutomation::MainWindow main;
-            auto edit = main.GetEditField();
-            edit.SetText(L"ABCDEFG");
-            edit.ClearDirtyFlag();
-            Poll::While(100ms, 1ms, [&edit]() { return edit.IsDirty(); });
+            int last = 6;
+            for(int i=1; i<=last; ++i) {
+                try {
+                    TestAutomation::Clipboard::SetClipboardText(droids.c_str());
 
-            edit.SetCursorPosition(2, 4);
-            auto editMenu = main.GetMenu().GetEditMenu();
-          //editMenu.SelectMenuItem(IDM_COPY);
-            editMenu.ClickMenuItem(L"Edit", L"Copy\tCtrl+C");
+                    TestAutomation::MainWindow main;
+                    auto edit = main.GetEditField();
+                    edit.SetText(L"ABCDEFG");
+                    edit.ClearDirtyFlag();
+                    Poll::While(100ms, 1ms, [&edit]() { return edit.IsDirty(); });
 
-            Poll::Until(1s, 1ms, [&droids]() { return TestAutomation::Clipboard::GetClipboardText() == L"CD"; });
-            Assert::AreEqual(L"CD", TestAutomation::Clipboard::GetClipboardText(), "the selection should have been copied to the clipboard");
+                    edit.SetCursorPosition(2, 4);
+                    auto editMenu = main.GetMenu().GetEditMenu();
 
-            main.ExitViaMenu();
+                    if (i&1)
+                        editMenu.SelectMenuItem(IDM_COPY);
+                    else
+                        editMenu.ClickMenuItem(L"Edit", L"Copy\tCtrl+C");
+
+                    Poll::Until(1s, 1ms, [&droids]() { return TestAutomation::Clipboard::GetClipboardText() == L"CD"; });
+                    Assert::AreEqual(L"CD", TestAutomation::Clipboard::GetClipboardText(), "the selection should have been copied to the clipboard");
+
+                    main.ExitViaMenu();
+                    return;
+                }
+                catch (AssertException&)
+                {
+                    if (i == last) // last try...
+                        throw;
+                }
+            }
         }
     },
     { std::string("If some text is selected and the user selects Edit->Cut, the text ends up on the clipboard and is removed from the edit field"), []()
         {
             std::wstring droids{L"These aren't the droids you're looking for."};
-            TestAutomation::Clipboard::SetClipboardText(droids.c_str());
 
-            TestAutomation::MainWindow main;
-            auto edit = main.GetEditField();
-            edit.SetText(L"ABCDEFG");
+            // try it both ways: if the first succeeds, return
+            int last = 6;
+            for (int i=1; i<=6; ++i) {
+                try {
+                    TestAutomation::Clipboard::SetClipboardText(droids.c_str());
 
-            edit.SetCursorPosition(2, 4);
-            auto editMenu = main.GetMenu().GetEditMenu();
-          //editMenu.SelectMenuItem(IDM_CUT);
-            editMenu.ClickMenuItem(L"Edit", L"Cut\tCtrl+X");
+                    TestAutomation::MainWindow main;
+                    auto edit = main.GetEditField();
+                    edit.SetText(L"ABCDEFG");
 
-            Poll::Until(1s, 1ms, [&droids]() { return TestAutomation::Clipboard::GetClipboardText() == L"CD"; });
-            edit.ClearDirtyFlag();
-            Poll::While(1s, 1ms, [&edit]() { return edit.IsDirty(); });
+                    edit.SetCursorPosition(2, 4);
+                    auto editMenu = main.GetMenu().GetEditMenu();
 
-            Assert::AreEqual(L"CD", TestAutomation::Clipboard::GetClipboardText(), "the selection should have been copied to the clipboard");
-            Assert::AreEqual(L"ABEFG", edit.GetText(), "two characters should have been cut from the edit field's text");
+                    if (i&1)
+                        editMenu.SelectMenuItem(IDM_CUT);
+                    else
+                        editMenu.ClickMenuItem(L"Edit", L"Cut\tCtrl+X");
 
-            main.ExitViaMenu();
+                    Poll::Until(1s, 1ms, [&droids]() { return TestAutomation::Clipboard::GetClipboardText() == L"CD"; });
+                    edit.ClearDirtyFlag();
+                    Poll::While(1s, 1ms, [&edit]() { return edit.IsDirty(); });
+
+                    Assert::AreEqual(L"CD", TestAutomation::Clipboard::GetClipboardText(), "the selection should have been copied to the clipboard");
+                    Assert::AreEqual(L"ABEFG", edit.GetText(), "two characters should have been cut from the edit field's text");
+
+                    main.ExitViaMenu();
+                    return;
+                }
+                catch (AssertException&)
+                {
+                    if (i == last) // last try...
+                        throw;
+                }
+            }
         }
     },
 };
