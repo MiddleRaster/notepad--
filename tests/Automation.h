@@ -389,7 +389,13 @@ namespace TestAutomation
         HWND printDlg;
         void Cancel()
         {
-            PostMessage(printDlg, WM_CLOSE, 0, 0);
+         // PostMessage(printDlg, WM_CLOSE, 0, 0); // now using UIA, because print dialog is no longer the classic win32 dialogbox            
+            Poll::While(90s, 50ms, [this]()
+                {
+                    ClickPrintDialogCancel(printDlg);
+                    return IsWindowVisible(printDlg);
+                });
+            Assert::IsFalse(IsWindowVisible(printDlg), "print dialog should have been dismissed");
         }
     };
 
@@ -665,18 +671,17 @@ namespace TestAutomation
                                 {
                                     auto* finder = reinterpret_cast<Finder*>(lParam);
 
-                                    // output classname
                                     wchar_t cls[256]{};
                                     GetClassNameW(hwnd, cls, static_cast<int>(std::size(cls)));
-                      
-                                    wchar_t cap[512]{};
-                                    SendMessageW(hwnd, WM_GETTEXT, (WPARAM)512, (LPARAM)cap);
-
                                     if (std::wcscmp(cls, L"ApplicationFrameWindow") == 0)
-                                    if (std::wcscmp(cap, L"Printing from Win32 application - Print") == 0)
                                     {
-                                        finder->hwnd = hwnd;
-                                        return FALSE; // found it!
+                                        wchar_t cap[512]{};
+                                        GetWindowTextW(hwnd, cap, static_cast<int>(std::size(cap))); // better than SendMessage WM_GETTEXT because the latter can hang
+                                        if (std::wcscmp(cap, L"Printing from Win32 application - Print") == 0)
+                                        {
+                                            finder->hwnd = hwnd;
+                                            return FALSE; // found it!
+                                        }
                                     }
                                     return TRUE; // continue enumeration
                                 }, reinterpret_cast<LPARAM>(&finder));
