@@ -72,7 +72,7 @@ struct TestBase : Empty
 };
 
 Test FilePrintTests[] = {
-//#if _DEBUG
+#if _DEBUG
     { std::string("File->Print pops up Print Dialog (then WM_CLOSE)"), []()
         {
             TestAutomation::MainWindow main;
@@ -86,7 +86,7 @@ Test FilePrintTests[] = {
             main.ExitViaMenu();
         }
     },
-//#endif
+#endif
     { std::string("Just measuring my screen (for now) including margins"), []()
         {
             HDC hdc = GetDC(nullptr);
