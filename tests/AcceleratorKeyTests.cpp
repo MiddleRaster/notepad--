@@ -105,7 +105,7 @@ Test AcceleratorKeyTests[] = {
             main.EnsureInForeground();
             main.SendKey('P', TestAutomation::MainWindow::Control);
 
-            auto print = main.Print();
+            auto print = main.FindExistingPrintDialog();
             print.Cancel();
 
             main.ExitViaMenu();

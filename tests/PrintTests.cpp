@@ -77,7 +77,7 @@ Test FilePrintTests[] = {
         {
             TestAutomation::MainWindow main;
             auto edit = main.GetEditField();
-            edit.SetText(L"Hi");
+            edit.SetText(L"File->Print pops up Print Dialog(then WM_CLOSE)");
             edit.ClearDirtyFlag();
 
             auto print = main.Print();

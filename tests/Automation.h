@@ -652,10 +652,8 @@ namespace TestAutomation
         }
         void FileOpen() { PostMessageW(hwnd, WM_COMMAND, IDM_OPEN, 0); }
 
-        PrintDialog Print()
+        PrintDialog FindExistingPrintDialog()
         {
-            PostMessageW(hwnd, WM_COMMAND, IDM_PRINT, 0);
-
             HWND printDlg = nullptr;
             Poll::While(2s, 10ms, [&printDlg]()
                 {
@@ -689,6 +687,12 @@ namespace TestAutomation
             Assert::AreNotEqual(nullptr, printDlg, "Print dialog not found");
             return {printDlg};
         }
+        PrintDialog Print()
+        {
+            PostMessageW(hwnd, WM_COMMAND, IDM_PRINT, 0);
+            return FindExistingPrintDialog();
+        }
+
         Menu GetMenu() { return {hwnd, ::GetMenu(hwnd)}; }
         void Undo() { PostMessageW(hwnd, WM_COMMAND, IDM_UNDO, 0); }
 
