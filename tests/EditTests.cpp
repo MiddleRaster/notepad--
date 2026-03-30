@@ -288,4 +288,55 @@ Test EditTests[] = {
             }
         }
     },
+    { std::string("If there is no text selected, then the Edit->Delete menu item is grayed out"), []()
+        {
+            TestAutomation::MainWindow main;
+            auto edit = main.GetEditField();
+            edit.SetText(L"If there is no text selected, then the Edit->Delete menu item is grayed out");
+            edit.ClearDirtyFlag();
+            Poll::While(1s, 1ms, [&edit]() { return edit.IsDirty(); });
+
+            auto editMenu = main.GetMenu().GetEditMenu();
+            Assert::IsFalse(editMenu.IsMenuItemEnabled(IDM_DELETE));
+
+            main.ExitViaMenu();
+        }
+    },
+    { std::string("If there is text selected, then that text is deleted when the user selects Edit>Delete"), []()
+        {
+            std::wstring text{L"If there is text selected, then that text is deleted when the user selects Edit>Delete"};
+
+            // try it both ways: if the first succeeds, return
+            int last = 6;
+            for (int i=1; i<=6; ++i) {
+                try {
+                    TestAutomation::MainWindow main;
+                    auto edit = main.GetEditField();
+                    edit.SetText(text);
+                    edit.SetCursorPosition(0,27);
+
+                    auto editMenu = main.GetMenu().GetEditMenu();
+
+                    if (i & 1)
+                        editMenu.SelectMenuItem(IDM_DELETE);
+                    else
+                        editMenu.ClickMenuItem(L"Edit", L"Delete\tDel");
+
+                    Poll::While(1s, 1ms, [&edit, &text]() { return edit.GetText() == text; });
+                    edit.ClearDirtyFlag();
+                    Poll::While(1s, 1ms, [&edit]() { return edit.IsDirty(); });
+
+                    Assert::AreEqual(L"then that text is deleted when the user selects Edit>Delete", edit.GetText(), "selected text should have been deleted");
+
+                    main.ExitViaMenu();
+                    return;
+                }
+                catch (AssertException&)
+                {
+                    if (i == last) // last try...
+                        throw;
+                }
+            }
+        }
+    },
 };

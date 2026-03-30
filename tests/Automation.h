@@ -454,9 +454,10 @@ namespace TestAutomation
         {
             switch (id)
             {
-            case IDM_COPY : SelectMenuItemViaKeyboard('E', 'C'); break;
-            case IDM_CUT  : SelectMenuItemViaKeyboard('E', 'T'); break;
-            case IDM_PASTE: SelectMenuItemViaKeyboard('E', 'P'); break;
+            case IDM_COPY  : SelectMenuItemViaKeyboard('E', 'C'); break;
+            case IDM_CUT   : SelectMenuItemViaKeyboard('E', 'T'); break;
+            case IDM_PASTE : SelectMenuItemViaKeyboard('E', 'P'); break;
+            case IDM_DELETE: SelectMenuItemViaKeyboard('E', 'D'); break;
             default:
                 Assert::Fail("mapping from menu id to keyboard selection is not implemented");
                 break;
@@ -737,20 +738,21 @@ namespace TestAutomation
             Shift   = 2,
             BothControlAndShift = 3,
         };
+        void SendKey(WORD vk, KeyStates keyStates)
+        {
+            INPUT inputs[6] = {};
+            UINT  count     = 0;
+            if (keyStates & Control) { inputs[count].type = INPUT_KEYBOARD; inputs[count].ki.wVk = VK_CONTROL; inputs[count].ki.dwFlags = 0;               count++; }
+            if (keyStates & Shift)   { inputs[count].type = INPUT_KEYBOARD; inputs[count].ki.wVk = VK_SHIFT;   inputs[count].ki.dwFlags = 0;               count++; }
+                                       inputs[count].type = INPUT_KEYBOARD; inputs[count].ki.wVk = vk;         inputs[count].ki.dwFlags = 0;               count++;
+                                       inputs[count].type = INPUT_KEYBOARD; inputs[count].ki.wVk = vk;         inputs[count].ki.dwFlags = KEYEVENTF_KEYUP; count++;
+            if (keyStates & Shift)   { inputs[count].type = INPUT_KEYBOARD; inputs[count].ki.wVk = VK_SHIFT;   inputs[count].ki.dwFlags = KEYEVENTF_KEYUP; count++; }
+            if (keyStates & Control) { inputs[count].type = INPUT_KEYBOARD; inputs[count].ki.wVk = VK_CONTROL; inputs[count].ki.dwFlags = KEYEVENTF_KEYUP; count++; }
+            SendInput(count, inputs, sizeof(INPUT));
+        }
         void SendKey(char c, KeyStates keyStates)
         {
-            INPUT inputs[6] = {}; // 6 is worst-case
-            UINT  count     = 0;
-            WORD  vk        = static_cast<WORD>(VkKeyScanA(c) & 0xFF);
-
-            if (keyStates & Control) { inputs[count].type = INPUT_KEYBOARD; inputs[count].ki.wVk = VK_CONTROL; inputs[count].ki.dwFlags = 0;                count++; }
-            if (keyStates & Shift)   { inputs[count].type = INPUT_KEYBOARD; inputs[count].ki.wVk = VK_SHIFT;   inputs[count].ki.dwFlags = 0;                count++; }
-                                       inputs[count].type = INPUT_KEYBOARD; inputs[count].ki.wVk = vk;         inputs[count].ki.dwFlags = 0;                count++;
-                                       inputs[count].type = INPUT_KEYBOARD; inputs[count].ki.wVk = vk;         inputs[count].ki.dwFlags = KEYEVENTF_KEYUP;  count++;
-            if (keyStates & Shift)   { inputs[count].type = INPUT_KEYBOARD; inputs[count].ki.wVk = VK_SHIFT;   inputs[count].ki.dwFlags = KEYEVENTF_KEYUP;  count++; }
-            if (keyStates & Control) { inputs[count].type = INPUT_KEYBOARD; inputs[count].ki.wVk = VK_CONTROL; inputs[count].ki.dwFlags = KEYEVENTF_KEYUP;  count++; }
-
-            SendInput(count, inputs, sizeof(INPUT));
+            SendKey(static_cast<WORD>(VkKeyScanA(c) & 0xFF), keyStates);
         }
     };
 }

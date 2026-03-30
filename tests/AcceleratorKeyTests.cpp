@@ -151,4 +151,24 @@ Test AcceleratorKeyTests[] = {
             main.ExitViaMenu();
         }
     },
+    { std::string("Del key works"), []()
+        {
+            TestAutomation::MainWindow main;
+            auto edit = main.GetEditField();
+            edit.SetText(L"Del key works");
+            edit.SetCursorPosition(3, 7);
+
+            main.EnsureInForeground();
+            main.SendKey(static_cast<WORD>(VK_DELETE), TestAutomation::MainWindow::KeyStates::None);
+            Poll::Until(1s, 1ms, [&edit]() { return edit.GetText() == L"Del works"; });
+
+            edit.ClearDirtyFlag();
+            Poll::While(1s, 1ms, [&edit]() { return edit.IsDirty(); });
+
+            Assert::AreEqual(L"Del works", edit.GetText(), "should have deleted selected text");
+
+            main.ExitViaMenu();
+        }
+    },
+
 };

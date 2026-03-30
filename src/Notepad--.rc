@@ -48,6 +48,7 @@ BEGIN
         MENUITEM "&Copy\tCtrl+C",        IDM_COPY
         MENUITEM "Cu&t\tCtrl+X",         IDM_CUT
         MENUITEM "&Paste\tCtrl+V",       IDM_PASTE
+        MENUITEM "Delete\tDel",          IDM_DELETE
     END
     POPUP "&Help"
     BEGIN
