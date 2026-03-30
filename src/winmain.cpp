@@ -28,10 +28,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         case IDM_SAVEAS: MessageHandler::GetHandler(hWnd).Handle_FileSaveAs(hWnd); break;
         case IDM_PRINT:  MessageHandler::GetHandler(hWnd).Handle_Print(hWnd);      break;
         case IDM_ABOUT:  MessageHandler::GetHandler(hWnd).Handle_About(hWnd);      break;
-        case IDM_EXIT:   MessageHandler::GetHandler(hWnd).Handle_Exit(hWnd);       break;
-        case IDM_UNDO:   MessageHandler::GetHandler(hWnd).Handle_Undo(hWnd);       break;
-        case IDM_COPY:   MessageHandler::GetHandler(hWnd).Handle_Copy(hWnd);       break;
-        case IDM_CUT:    MessageHandler::GetHandler(hWnd).Handle_Cut (hWnd);       break;
+        case IDM_EXIT:   MessageHandler::GetHandler(hWnd).Handle_Exit (hWnd);      break;
+        case IDM_UNDO:   MessageHandler::GetHandler(hWnd).Handle_Undo (hWnd);      break;
+        case IDM_COPY:   MessageHandler::GetHandler(hWnd).Handle_Copy (hWnd);      break;
+        case IDM_CUT:    MessageHandler::GetHandler(hWnd).Handle_Cut  (hWnd);      break;
+        case IDM_PASTE:  MessageHandler::GetHandler(hWnd).Handle_Paste(hWnd);      break;
         default:         return DefWindowProc(hWnd, message, wParam, lParam);
         }
         break;

@@ -17,6 +17,7 @@
 #define IDM_UNDO                120
 #define IDM_COPY                121
 #define IDM_CUT                 122
+#define IDM_PASTE               123
 
 #define IDM_EXIT                190
 #define IDM_ABOUT               200

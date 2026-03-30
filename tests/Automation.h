@@ -202,6 +202,14 @@ namespace TestAutomation
                 CloseClipboard();
             }
         }
+        static void EmptyClipboard()
+        {
+            if (OpenClipboard(nullptr))
+            {
+                ::EmptyClipboard();   // If it fails, there's nothing else to do
+                CloseClipboard();
+            }
+        }
     };
 
     class FileDirtyMessageBox
@@ -446,8 +454,9 @@ namespace TestAutomation
         {
             switch (id)
             {
-            case IDM_COPY: SelectMenuItemViaKeyboard('E', 'C'); break;
-            case IDM_CUT : SelectMenuItemViaKeyboard('E', 'T'); break;
+            case IDM_COPY : SelectMenuItemViaKeyboard('E', 'C'); break;
+            case IDM_CUT  : SelectMenuItemViaKeyboard('E', 'T'); break;
+            case IDM_PASTE: SelectMenuItemViaKeyboard('E', 'P'); break;
             default:
                 Assert::Fail("mapping from menu id to keyboard selection is not implemented");
                 break;

@@ -237,4 +237,55 @@ Test EditTests[] = {
             }
         }
     },
+    { std::string("If there is no text on the clipboard, then the Edit->Paste menu item is grayed out"), []()
+        {
+            TestAutomation::Clipboard::EmptyClipboard();
+            Poll::While(1s, 1ms, []() { return TestAutomation::Clipboard::GetClipboardText() == L""; });
+            TestAutomation::MainWindow main;
+
+            auto editMenu = main.GetMenu().GetEditMenu();
+            Assert::IsFalse(editMenu.IsMenuItemEnabled(IDM_PASTE));
+
+            main.ExitViaMenu();
+        }
+    },
+    { std::string("If there is text on the clipboard and the user selects Edit>Paste, then the clipboard text is pasted at current cursor position"), []()
+        {
+            std::wstring text{L"Paste works"};
+
+            // try it both ways: if the first succeeds, return
+            int last = 6;
+            for (int i=1; i<=6; ++i) {
+                try {
+                    TestAutomation::Clipboard::SetClipboardText(text.c_str());
+
+                    TestAutomation::MainWindow main;
+                    auto edit = main.GetEditField();
+                    edit.SetText(L"XX");
+                    edit.SetCursorPosition(1, 1);
+             
+                    auto editMenu = main.GetMenu().GetEditMenu();
+
+                    if (i&1)
+                        editMenu.SelectMenuItem(IDM_PASTE);
+                    else
+                        editMenu.ClickMenuItem(L"Edit", L"Paste\tCtrl+V");
+
+                    Poll::While(1s, 1ms, [&edit]() { return edit.GetText() == L"XX"; });
+                    edit.ClearDirtyFlag();
+                    Poll::While(1s, 1ms, [&edit]() { return edit.IsDirty(); });
+
+                    Assert::AreEqual(L"XPaste worksX", edit.GetText(), "should have been pasted at position 1");
+
+                    main.ExitViaMenu();
+                    return;
+                }
+                catch (AssertException&)
+                {
+                    if (i == last) // last try...
+                        throw;
+                }
+            }
+        }
+    },
 };

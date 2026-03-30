@@ -133,4 +133,22 @@ Test AcceleratorKeyTests[] = {
             main.ExitViaMenu();
         }
     },
+    { std::string("Ctrl-V works"), []()
+        {
+            std::wstring text{L"Ctrl-V works"};
+            TestAutomation::Clipboard::SetClipboardText(text);
+            TestAutomation::MainWindow main;
+
+            main.EnsureInForeground();
+            main.SendKey('V', TestAutomation::MainWindow::Control);
+
+            auto edit = main.GetEditField();
+            Poll::Until(1s, 1ms, [&edit]() { return edit.GetText() == L"Ctrl-V works"; });
+            Assert::AreEqual(L"Ctrl-V works", edit.GetText(), "should have pasted");
+
+            edit.ClearDirtyFlag();
+            Poll::While(1s, 1ms, [&edit]() { return edit.IsDirty(); });
+            main.ExitViaMenu();
+        }
+    },
 };

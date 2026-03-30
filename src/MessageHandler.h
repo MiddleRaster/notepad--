@@ -212,13 +212,15 @@ public:
 
         DWORD start, end;
         SendMessage(edit, EM_GETSEL, (WPARAM)&start, (LPARAM)&end);
-        EnableMenuItem(hPopup, IDM_COPY, MF_BYCOMMAND | (start != end ? MF_ENABLED : MF_GRAYED));
-        EnableMenuItem(hPopup, IDM_CUT,  MF_BYCOMMAND | (start != end ? MF_ENABLED : MF_GRAYED));
+        EnableMenuItem(hPopup, IDM_COPY,  MF_BYCOMMAND | (start != end ? MF_ENABLED : MF_GRAYED));
+        EnableMenuItem(hPopup, IDM_CUT,   MF_BYCOMMAND | (start != end ? MF_ENABLED : MF_GRAYED));
+        EnableMenuItem(hPopup, IDM_PASTE, MF_BYCOMMAND | (IsClipboardFormatAvailable(CF_UNICODETEXT) || IsClipboardFormatAvailable(CF_TEXT) ? MF_ENABLED : MF_GRAYED));
     }
     void Handle_EN_CHANGE(HWND) { undo.UpdateUndo(edit); }
     void Handle_Undo     (HWND) { undo.Apply(edit); }
-    void Handle_Copy     (HWND) { SendMessage(edit, WM_COPY, 0, 0); } // let edit field's implementation do the work
-    void Handle_Cut      (HWND) { SendMessage(edit, WM_CUT,  0, 0); } // let edit field's implementation do the work
+    void Handle_Copy     (HWND) { SendMessage(edit, WM_COPY,  0, 0); } // let edit field's implementation do the work
+    void Handle_Cut      (HWND) { SendMessage(edit, WM_CUT,   0, 0); } // let edit field's implementation do the work
+    void Handle_Paste    (HWND) { SendMessage(edit, WM_PASTE, 0, 0); } // let edit field's implementation do the work
 
     void Handle_FileNew(HWND hWnd)
     {

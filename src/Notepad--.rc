@@ -47,6 +47,7 @@ BEGIN
         MENUITEM "&Undo\tCtrl+Z",        IDM_UNDO
         MENUITEM "&Copy\tCtrl+C",        IDM_COPY
         MENUITEM "Cu&t\tCtrl+X",         IDM_CUT
+        MENUITEM "&Paste\tCtrl+V",       IDM_PASTE
     END
     POPUP "&Help"
     BEGIN
