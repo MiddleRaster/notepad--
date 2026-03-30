@@ -19,6 +19,8 @@
 #define IDM_CUT                 122
 #define IDM_PASTE               123
 #define IDM_DELETE              124
+#define IDM_SELECTALL           125
+
 
 #define IDM_EXIT                190
 #define IDM_ABOUT               200

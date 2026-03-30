@@ -219,10 +219,11 @@ public:
     }
     void Handle_EN_CHANGE(HWND) { undo.UpdateUndo(edit); }
     void Handle_Undo     (HWND) { undo.Apply(edit); }
-    void Handle_Copy     (HWND) { SendMessage(edit, WM_COPY,  0, 0); } // let edit field's implementation do the work
-    void Handle_Cut      (HWND) { SendMessage(edit, WM_CUT,   0, 0); } // let edit field's implementation do the work
-    void Handle_Paste    (HWND) { SendMessage(edit, WM_PASTE, 0, 0); } // let edit field's implementation do the work
-    void Handle_Delete   (HWND) { SendMessage(edit, WM_CLEAR, 0, 0); } // let edit field's implementation do the work
+    void Handle_Copy     (HWND) { SendMessage(edit, WM_COPY,   0,  0); } // let edit field's implementation do the work
+    void Handle_Cut      (HWND) { SendMessage(edit, WM_CUT,    0,  0); } // let edit field's implementation do the work
+    void Handle_Paste    (HWND) { SendMessage(edit, WM_PASTE,  0,  0); } // let edit field's implementation do the work
+    void Handle_Delete   (HWND) { SendMessage(edit, WM_CLEAR,  0,  0); } // let edit field's implementation do the work
+    void Handle_SelectAll(HWND) { SendMessage(edit, EM_SETSEL, 0, -1); } // let edit field's implementation do the work
 
     void Handle_FileNew(HWND hWnd)
     {

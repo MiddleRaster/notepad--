@@ -170,5 +170,30 @@ Test AcceleratorKeyTests[] = {
             main.ExitViaMenu();
         }
     },
+    { std::string("Ctrl-A works"), []()
+        {
+            TestAutomation::MainWindow main;
+            auto edit = main.GetEditField();
+            edit.SetText(L"Ctrl-A works");
 
+            DWORD s, e;
+            edit.GetCursorPosition(s, e);
+
+            main.EnsureInForeground();
+            main.SendKey('A', TestAutomation::MainWindow::Control);
+            Poll::Until(1s, 1ms, [&]()  {
+                                            DWORD ss,ee;
+                                            edit.GetCursorPosition(ss, ee);
+                                            return (s != ss) || (e != ee);
+                                        });
+            edit.ClearDirtyFlag();
+            Poll::While(1s, 1ms, [&edit]() { return edit.IsDirty(); });
+
+            edit.GetCursorPosition(s, e);
+            Assert::AreEqual( 0, s, "start cursor position should be at beginning");
+            Assert::AreEqual(12, e,   "end cursor position should be at the end");
+
+            main.ExitViaMenu();
+        }
+    },
 };

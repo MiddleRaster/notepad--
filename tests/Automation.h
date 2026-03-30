@@ -454,10 +454,11 @@ namespace TestAutomation
         {
             switch (id)
             {
-            case IDM_COPY  : SelectMenuItemViaKeyboard('E', 'C'); break;
-            case IDM_CUT   : SelectMenuItemViaKeyboard('E', 'T'); break;
-            case IDM_PASTE : SelectMenuItemViaKeyboard('E', 'P'); break;
-            case IDM_DELETE: SelectMenuItemViaKeyboard('E', 'D'); break;
+            case IDM_COPY     : SelectMenuItemViaKeyboard('E', 'C'); break;
+            case IDM_CUT      : SelectMenuItemViaKeyboard('E', 'T'); break;
+            case IDM_PASTE    : SelectMenuItemViaKeyboard('E', 'P'); break;
+            case IDM_DELETE   : SelectMenuItemViaKeyboard('E', 'D'); break;
+            case IDM_SELECTALL: SelectMenuItemViaKeyboard('E', 'A'); break;
             default:
                 Assert::Fail("mapping from menu id to keyboard selection is not implemented");
                 break;

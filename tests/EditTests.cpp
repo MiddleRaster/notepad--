@@ -339,4 +339,60 @@ Test EditTests[] = {
             }
         }
     },
+    { std::string("The 'Select All' menu item is always enabled"), []()
+        {
+            TestAutomation::MainWindow main;
+            auto edit = main.GetEditField();
+            edit.SetText(L"The 'Select All' menu item is always enabled");
+            edit.ClearDirtyFlag();
+            Poll::While(1s, 1ms, [&edit]() { return edit.IsDirty(); });
+
+            auto editMenu = main.GetMenu().GetEditMenu();
+            Assert::IsTrue(editMenu.IsMenuItemEnabled(IDM_SELECTALL), "The 'Select All' menu item should always be enabled");
+
+            main.ExitViaMenu();
+        }
+    },
+    { std::string("When the user selects Edit>SelectAll, the cursor positions go to each end"), []()
+        {
+            std::wstring text{L"When the user selects Edit>SelectAll, the cursor positions go to each end"};
+
+            // try it both ways: if the first succeeds, return
+            int last = 6;
+            for (int i=1; i<=6; ++i) {
+                try {
+                    TestAutomation::MainWindow main;
+                    auto edit = main.GetEditField();
+                    edit.SetText(text);
+
+                    auto editMenu = main.GetMenu().GetEditMenu();
+
+                    if (i & 1)
+                        editMenu.SelectMenuItem(IDM_SELECTALL);
+                    else
+                        editMenu.ClickMenuItem(L"Edit", L"Select All\tCtrl+A");
+
+                    DWORD s, e;
+                    Poll::While(1s, 1ms, [&]()  {
+                                                    edit.GetCursorPosition(s, e);
+                                                    return (s != 0) || (e != text.length());
+                                                });
+                    edit.ClearDirtyFlag();
+                    Poll::While(1s, 1ms, [&edit]() { return edit.IsDirty(); });
+
+                    edit.GetCursorPosition(s, e);
+                    Assert::AreEqual(            0, s, "the start cursor position should be at the beginning of the text");
+                    Assert::AreEqual(text.length(), e, "the end cursor position should be at the end of the text");
+
+                    main.ExitViaMenu();
+                    return;
+                }
+                catch (AssertException&)
+                {
+                    if (i == last) // last try...
+                        throw;
+                }
+            }
+        }
+    },
 };
