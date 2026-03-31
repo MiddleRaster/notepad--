@@ -4,6 +4,7 @@
 #pragma once
 #include <windows.h>
 #include <commdlg.h>
+#include <cwctype>
 
 class Find
 {
@@ -71,13 +72,16 @@ private:
     }
     bool FindNextOne(const std::wstring& findWhat, bool matchCase, bool wholeWord, DWORD& outStart, DWORD& outEnd)
     {
-        std::wstring text = GetEditText();
 
         DWORD selStart=0, selEnd=0;
         SendMessage(edit, EM_GETSEL, reinterpret_cast<WPARAM>(&selStart), reinterpret_cast<LPARAM>(&selEnd));
 
-        std::wstring haystack = matchCase ? text     : [&] { auto t = text;     for (auto& c : t) c = towlower(c); return t; }();
-        std::wstring needle   = matchCase ? findWhat : [&] { auto n = findWhat; for (auto& c : n) c = towlower(c); return n; }();
+        std::wstring haystack = GetEditText();
+        std::wstring needle   = findWhat;
+        if (!matchCase) {
+            std::transform(haystack.begin(), haystack.end(), haystack.begin(), [](wchar_t c) { return std::towlower(c); });
+            std::transform(  needle.begin(),   needle.end(),   needle.begin(), [](wchar_t c) { return std::towlower(c); });
+        }
 
         size_t searchFrom = selStart+1;
         size_t pos = haystack.find(needle, searchFrom);
