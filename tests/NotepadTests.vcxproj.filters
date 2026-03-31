@@ -45,6 +45,9 @@
     <ClCompile Include="UIA.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FindTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Automation.h">

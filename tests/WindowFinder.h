@@ -32,6 +32,16 @@ namespace WindowFinder
                 return std::wcscmp(cls, className.c_str()) == 0;
             }
         };
+        struct Caption
+        {
+            const std::wstring caption;
+            bool operator()(HWND hwnd) const
+            {
+                wchar_t cap[256]{};
+                GetWindowText(hwnd, cap, static_cast<int>(std::size(cap)));
+                return std::wcscmp(cap, caption.c_str()) == 0;
+            }
+        };
         struct NotStyle
         {
             DWORD notThisStyle{};

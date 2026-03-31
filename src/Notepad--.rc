@@ -50,6 +50,8 @@ BEGIN
         MENUITEM "&Paste\tCtrl+V",       IDM_PASTE
         MENUITEM "Delete\tDel",          IDM_DELETE
         MENUITEM "Select &All\tCtrl+A",  IDM_SELECTALL
+        MENUITEM SEPARATOR
+        MENUITEM "&Find\tCtrl+F",        IDM_FIND
     END
     POPUP "&Help"
     BEGIN
@@ -72,6 +74,7 @@ BEGIN
     "p",            IDM_PRINT,              VIRTKEY, CONTROL
     "z",            IDM_UNDO,               VIRTKEY, CONTROL
     "a",            IDM_SELECTALL,          VIRTKEY, CONTROL
+    "f",            IDM_FIND,               VIRTKEY, CONTROL
     "?",            IDM_ABOUT,              ASCII,   ALT
     "/",            IDM_ABOUT,              ASCII,   ALT
 END

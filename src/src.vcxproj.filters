@@ -33,6 +33,9 @@
     <ClInclude Include="Undo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Find.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="winmain.cpp">

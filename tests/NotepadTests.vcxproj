@@ -148,6 +148,7 @@
     <ClCompile Include="AcceleratorKeyTests.cpp" />
     <ClCompile Include="EditTests.cpp" />
     <ClCompile Include="FileTests.cpp" />
+    <ClCompile Include="FindTests.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainTests.cpp" />
     <ClCompile Include="ExitTests.cpp" />

@@ -11,12 +11,17 @@
 #include "FileIO.h"
 #include "PrintEngine.h"
 #include "Undo.h"
+#include "Find.h"
 
 class MessageHandler
 {
     HWND edit{};
     std::filesystem::path FilePath{};
     Undo undo;
+
+    HWND hDlgFind = nullptr;
+    UINT uFindMsg{};
+    Find find;
 
     int Handle_WM_CREATE(HWND hWnd)
     {
@@ -71,7 +76,7 @@ class MessageHandler
     }
 
 public:
-    static MessageHandler& GetHandler(HWND hWnd) { return *reinterpret_cast<MessageHandler*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA)); }
+    static MessageHandler* GetHandler(HWND hWnd) { return reinterpret_cast<MessageHandler*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA)); }
     static int CreateHandlerAndEditWindow(HWND hWnd)
     {
         if (GetWindowLongPtrW(hWnd, GWLP_USERDATA) != LONG_PTR(0))
@@ -256,4 +261,31 @@ public:
                 return (INT_PTR)FALSE;
             });
     }
+    void SetRegisteredFindMessage(UINT findMsg) { uFindMsg = findMsg; } // so that we can respond to the FindDialog's messages
+
+    bool IsFindMessage(UINT message)
+    {
+        if (message != uFindMsg)
+            return false;
+
+        // supposedly lParam is a pointer to the exact same struct I passed to FindText, so there's no need to check
+        return find.HandleMessage();
+    }
+    void Handle_Find(HWND hWnd)
+    {
+        DWORD start, end;
+        SendMessage(edit, EM_GETSEL, (WPARAM)&start, (LPARAM)&end);
+
+        const LRESULT length = SendMessageW(edit, WM_GETTEXTLENGTH, 0, 0);
+        std::wstring selection(static_cast<size_t>(length) + 1, L'\0');
+        SendMessageW(edit, WM_GETTEXT, static_cast<WPARAM>(selection.size()), reinterpret_cast<LPARAM>(selection.data()));
+        selection.resize(static_cast<size_t>(length));
+
+        if (start == end)
+            selection = L"";
+        else
+            selection = selection.substr(start, end - start);
+        find.Display(hWnd, edit, &hDlgFind, selection);
+    }
+    bool DoDialogMessage(MSG* msg) { return hDlgFind && IsDialogMessage(hDlgFind, msg); }
 };

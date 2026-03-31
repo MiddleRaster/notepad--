@@ -406,7 +406,35 @@ namespace TestAutomation
             Assert::IsFalse(IsWindowVisible(printDlg), "print dialog should have been dismissed");
         }
     };
+    struct FindDialog
+    {
+        HWND findDlg;
+        void Cancel()
+        {
+            HWND cancel = WindowFinder::FindDesiredChildWindow(findDlg, WindowFinder::Has::ClassName(L"Button"), WindowFinder::Has::Caption(L"Cancel"));
+            PostMessage(cancel, BM_CLICK, 0, 0);
+            Poll::While(1s, 1ms, [&]() { return IsWindowVisible(findDlg); });
+            Assert::IsFalse(IsWindowVisible(findDlg), "Find dialog should have been dismissed by now");
+        }
+        std::wstring GetEditFieldText()
+        {
+            HWND edit = WindowFinder::FindDesiredChildWindow(findDlg, WindowFinder::Has::ClassName(L"Edit"));
 
+            int len = static_cast<int>(SendMessage(edit, WM_GETTEXTLENGTH, 0, 0));
+            if (len <= 0)
+                return {};
+            
+            std::wstring s(len+1, L'\0');
+            SendMessage(edit, WM_GETTEXT, len + 1, reinterpret_cast<LPARAM>(s.data()));
+            s.resize(len);
+            return s;
+        }
+        void FindNext()
+        {
+            HWND findNext = WindowFinder::FindDesiredChildWindow(findDlg, WindowFinder::Has::ClassName(L"Button"), WindowFinder::Has::Caption(L"&Find Next"));
+            PostMessage(findNext, BM_CLICK, 0, 0);
+        }
+    };
 
     class SubMenu
     {
@@ -459,6 +487,7 @@ namespace TestAutomation
             case IDM_PASTE    : SelectMenuItemViaKeyboard('E', 'P'); break;
             case IDM_DELETE   : SelectMenuItemViaKeyboard('E', 'D'); break;
             case IDM_SELECTALL: SelectMenuItemViaKeyboard('E', 'A'); break;
+            case IDM_FIND     : SelectMenuItemViaKeyboard('E', 'F'); break;
             default:
                 Assert::Fail("mapping from menu id to keyboard selection is not implemented");
                 break;
@@ -707,6 +736,12 @@ namespace TestAutomation
         {
             PostMessageW(hwnd, WM_COMMAND, IDM_PRINT, 0);
             return FindExistingPrintDialog();
+        }
+        FindDialog FindExistingFindDialog()
+        {
+            HWND findDlg = WindowUtils::WaitForWindow(2s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Is::Visible); });
+            Assert::AreNotEqual(nullptr, findDlg, "Find dialog not found");
+            return {findDlg};
         }
 
         Menu GetMenu() { return {hwnd, ::GetMenu(hwnd)}; }

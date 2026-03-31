@@ -196,4 +196,23 @@ Test AcceleratorKeyTests[] = {
             main.ExitViaMenu();
         }
     },
+    { std::string("Ctrl-F works"), []()
+        {
+            TestAutomation::MainWindow main;
+            auto edit = main.GetEditField();
+            edit.SetText(L"Ctrl-F works");
+
+            main.EnsureInForeground();
+            main.SendKey('F', TestAutomation::MainWindow::Control);
+
+            edit.ClearDirtyFlag();
+            Poll::While(1s, 1ms, [&edit]() { return edit.IsDirty(); });
+            Poll::Until(1s, 1ms, [&main]() { try { auto find = main.FindExistingFindDialog(); return true; }
+                                             catch (...) { return false; } });
+            auto find = main.FindExistingFindDialog();
+            find.Cancel();
+
+            main.ExitViaMenu();
+        }
+    },
 };
