@@ -88,7 +88,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE /*hPrevInstan
     while (GetMessage(&msg, nullptr, 0, 0))
     {
         if (pMessageHandler->DoDialogMessage(&msg))
-//      if (pMessageHandler->hDlgFind && IsDialogMessage(pMessageHandler->hDlgFind, &msg))
             continue;
 
         if (!TranslateAccelerator(hWnd, hAccelTable, &msg))

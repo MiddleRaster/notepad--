@@ -9,6 +9,7 @@ namespace WindowFinder
     {
         static bool Visible(HWND hwnd) { return !!IsWindowVisible(hwnd); }
         static bool UnOwned(HWND hwnd) { return GetWindow(hwnd, GW_OWNER) == nullptr; }
+        static bool Enabled(HWND hwnd) { return !!IsWindowEnabled(hwnd); }
     };
     namespace Has
     {
@@ -53,6 +54,33 @@ namespace WindowFinder
                 return true;
             }
         };
+    }
+
+    namespace Contains
+    {
+        static bool ChildThatIsStaticIcon(HWND hwnd)
+        {   // does HWND have a child that is a static icon
+
+            bool found = false;
+            EnumChildWindows(hwnd,  [](HWND child, LPARAM lParam) -> BOOL
+                                    {
+                                        wchar_t cls[32]{};
+                                        if (GetClassNameW(child, cls, 32) != 0)
+                                        {
+                                            if (wcscmp(cls, L"Static") == 0)
+                                            {
+                                                LONG_PTR style = GetWindowLongPtrW(child, GWL_STYLE);
+                                                if (style & SS_ICON)
+                                                {
+                                                    *reinterpret_cast<bool*>(lParam) = true;
+                                                    return FALSE;
+                                                }
+                                            }
+                                        }
+                                        return TRUE;
+                                    }, reinterpret_cast<LPARAM>(&found));
+            return found;
+        }
     }
 
     HWND FindDesiredChildWindow(HWND parent, auto... preds)

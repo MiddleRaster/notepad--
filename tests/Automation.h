@@ -212,7 +212,33 @@ namespace TestAutomation
         }
     };
 
-    class FileDirtyMessageBox
+    struct MessageBoxUtils
+    {
+        static std::wstring GetStaticText(HWND hwnd)
+        {
+            HWND staticText = WindowFinder::FindDesiredChildWindow(hwnd, WindowFinder::Has::ClassName(L"Static"), WindowFinder::Has::NotStyle{SS_ICON});
+            Assert::AreNotEqual(nullptr, staticText, "static text field not found");
+
+            std::wstring text;
+            int len = GetWindowTextLengthW(staticText);
+            if (len > 0) {
+                text.resize(len+1);
+                GetWindowTextW(staticText, text.data(), len+1);
+                text.resize(len);
+            }
+            return text;
+        }
+        static void PushOkButton(HWND hwnd)
+        {
+            HWND okButton = GetDlgItem(hwnd, IDOK);
+            if (okButton != nullptr)
+                SendMessageW(okButton, BM_CLICK, 0, 0);
+            else
+                SendMessageW(hwnd, WM_CLOSE, 0, 0);
+        }
+    };
+
+    class FileDirtyMessageBox : private MessageBoxUtils
     {
         void ClickButton(int id)
         {
@@ -228,14 +254,8 @@ namespace TestAutomation
             messageBox = WindowUtils::WaitForWindow(5s, [&pid]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}); });
             Assert::AreNotEqual(nullptr, messageBox, "Exit dialog not found");
         }
-        std::wstring GetStaticMessage() const
-        {   // get the static control that's not an icon
-            HWND prompt = WindowFinder::FindDesiredChildWindow(messageBox, WindowFinder::Has::ClassName(L"Static"), WindowFinder::Has::NotStyle{SS_ICON});
-            Assert::AreNotEqual(nullptr, prompt, "Exit dialog prompt not found");
-            wchar_t promptText[128]{};
-            GetWindowTextW(prompt, promptText, static_cast<int>(std::size(promptText)));
-            return promptText;
-        }
+        std::wstring GetStaticMessage() const { return GetStaticText(messageBox); }
+
         void PressDontSave() { ClickButton(IDNO); }
         void PressSave    () { ClickButton(IDYES); }
         void PressCancel  () { ClickButton(IDCANCEL); }
@@ -375,7 +395,7 @@ namespace TestAutomation
         }
     };
 
-    class ModalMessageBox
+    class ModalMessageBox : private MessageBoxUtils
     {
         HWND msgBox;
         std::function<void()> onDismissed;
@@ -383,12 +403,7 @@ namespace TestAutomation
         ModalMessageBox(HWND hwnd, std::function<void()> onDismissed) : msgBox(hwnd), onDismissed(std::move(onDismissed)) {}
         void PressOk()
         {
-            HWND okButton = GetDlgItem(msgBox, IDOK);
-            if (okButton != nullptr)
-                SendMessageW(okButton, BM_CLICK, 0, 0);
-            else
-                SendMessageW(msgBox, WM_CLOSE, 0, 0);
-
+            MessageBoxUtils::PushOkButton(msgBox);
             onDismissed(); // let MainWindow peer know that the modal messagebox is gone, so it can look for the main window
         }
     };
@@ -434,6 +449,14 @@ namespace TestAutomation
             HWND findNext = WindowFinder::FindDesiredChildWindow(findDlg, WindowFinder::Has::ClassName(L"Button"), WindowFinder::Has::Caption(L"&Find Next"));
             PostMessage(findNext, BM_CLICK, 0, 0);
         }
+    };
+    class UnfoundMessageBox : private MessageBoxUtils
+    {
+        HWND unfound;
+    public:
+        UnfoundMessageBox(HWND unfound) : unfound(unfound) {}
+        std::wstring GetText() const { return GetStaticText(unfound); }
+        void PushOkButton() { MessageBoxUtils::PushOkButton(unfound); }
     };
 
     class SubMenu
@@ -742,6 +765,12 @@ namespace TestAutomation
             HWND findDlg = WindowUtils::WaitForWindow(2s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Is::Visible); });
             Assert::AreNotEqual(nullptr, findDlg, "Find dialog not found");
             return {findDlg};
+        }
+        UnfoundMessageBox FindExistingUnfoundMessageBox()
+        {
+            HWND unfound = WindowUtils::WaitForWindow(1s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Is::Enabled, WindowFinder::Contains::ChildThatIsStaticIcon); });
+            Assert::AreNotEqual(nullptr, unfound, "Find Error MessageBox not found");
+            return {unfound};
         }
 
         Menu GetMenu() { return {hwnd, ::GetMenu(hwnd)}; }

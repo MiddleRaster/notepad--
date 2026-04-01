@@ -78,4 +78,37 @@ Test FindTests[] = {
             main.ExitViaMenu();
         }
     },
+    { std::string("Cannot search past end of text:  messagebox pops up"), []()
+        {
+            TestAutomation::MainWindow main;
+            auto edit = main.GetEditField();
+            edit.SetText(L"abcdefg");
+
+            DWORD s=0, e=1;
+            edit.SetCursorPosition(s, e);
+            Poll::While(1s, 1ms, [&]() {   DWORD ss,ee;
+                                            edit.GetCursorPosition(ss, ee);
+                                            return (s != ss) || (e != ee);
+                                        });
+            edit.ClearDirtyFlag();
+            Poll::While(1s, 1ms, [&edit]() { return edit.IsDirty(); });
+
+            auto editMenu = main.GetMenu().GetEditMenu();
+            editMenu.SelectMenuItem(IDM_FIND);
+            auto find = main.FindExistingFindDialog();
+
+            // 'a' is in the Find dialog's edit field
+            Assert::AreEqual(L"a", find.GetEditFieldText(), "the find dialog's edit field should have been prepopulated");
+
+            // FindNext which will fail to find another 'a'
+            find.FindNext();
+
+            auto mb = main.FindExistingUnfoundMessageBox();
+            Assert::AreEqual(L"Cannot find 'a'", mb.GetText(), "messagebox's static text is wrong");
+            mb.PushOkButton();
+
+            find.Cancel();
+            main.ExitViaMenu();
+        }
+    },
 };
