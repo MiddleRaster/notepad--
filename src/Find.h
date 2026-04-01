@@ -21,6 +21,7 @@ public:
         fr.wFindWhatLen     = ARRAYSIZE(findBuf);
      // fr.lpstrReplaceWith = szReplaceBuf; // only for ReplaceText
      // fr.wReplaceWithLen  = ARRAYSIZE(szReplaceBuf);
+        fr.Flags            = FR_DOWN;
     }
     void Display(HWND hWnd, HWND hEdit, HWND* pDialog, const std::wstring& text)
     {
@@ -28,24 +29,24 @@ public:
         edit         = hEdit;
         fr.hwndOwner = hWnd;
         text.copy(fr.lpstrFindWhat, 260, 0);
-        fr.Flags     = FR_DOWN; // (re)set flags, otherwise we'll hit FR_DIALOGTERM again
+        fr.Flags    &= ~FR_DIALOGTERM;  // unset FR_DIALOGTERM, otherwise we'll just terminate again
 
         *pDlg = FindText(&fr);
     }
     bool HandleMessage()
     {
-        if (fr.Flags & FR_DIALOGTERM)
-            *pDlg = nullptr;
-        if (fr.Flags & FR_FINDNEXT)   { OnFindNext  (); }
-        if (fr.Flags & FR_REPLACE)    { OnReplace   (); }
-        if (fr.Flags & FR_REPLACEALL) { OnReplaceAll(); }
+        if (fr.Flags & FR_DIALOGTERM) { *pDlg = nullptr; }
+        if (fr.Flags & FR_FINDNEXT)   { OnFindNext  ();  }
+        if (fr.Flags & FR_REPLACE)    { OnReplace   ();  }
+        if (fr.Flags & FR_REPLACEALL) { OnReplaceAll();  }
         return true;
     }
 private:
     void OnFindNext()
     {
         DWORD s=0, e=0;
-        if (FindNextOne(fr.lpstrFindWhat, !!(fr.Flags&FR_MATCHCASE), !!(fr.Flags&FR_WHOLEWORD), s, e))
+        if (fr.Flags & FR_DOWN ? FindNextOne    (fr.lpstrFindWhat, !!(fr.Flags & FR_MATCHCASE), !!(fr.Flags & FR_WHOLEWORD), s, e)
+                               : FindPreviousOne(fr.lpstrFindWhat, !!(fr.Flags & FR_MATCHCASE), !!(fr.Flags & FR_WHOLEWORD), s, e))
         {
             SendMessage(edit, EM_SETSEL,      s, e);
             SendMessage(edit, EM_SCROLLCARET, 0, 0);
@@ -70,22 +71,41 @@ private:
         text.resize(len);
         return text;
     }
+
     bool FindNextOne(const std::wstring& findWhat, bool matchCase, bool wholeWord, DWORD& outStart, DWORD& outEnd)
     {
-
         DWORD selStart=0, selEnd=0;
         SendMessage(edit, EM_GETSEL, reinterpret_cast<WPARAM>(&selStart), reinterpret_cast<LPARAM>(&selEnd));
-
+        return FindInText(GetEditText(), selStart+1, findWhat, matchCase, wholeWord, outStart, outEnd);
+    }
+    bool FindPreviousOne(const std::wstring& findWhat, bool matchCase, bool wholeWord, DWORD& outStart, DWORD& outEnd)
+    { // re-use FindInText, but reverse the strings first. Clever, eh?
+        DWORD selStart=0, selEnd=0;
+        SendMessage(edit, EM_GETSEL, reinterpret_cast<WPARAM>(&selStart), reinterpret_cast<LPARAM>(&selEnd));
         std::wstring haystack = GetEditText();
+        DWORD totalLen = static_cast<DWORD>(haystack.size());
+
+        std::wstring revHaystack(haystack.rbegin(), haystack.rend());
+        std::wstring revNeedle  (findWhat.rbegin(), findWhat.rend());
+        DWORD searchFrom = totalLen - selStart;  // mirror selStart
+
+        DWORD revStart=0, revEnd=0;
+        if (!FindInText(revHaystack, searchFrom, revNeedle, matchCase, wholeWord, revStart, revEnd))
+            return false;
+
+        outStart = totalLen - revEnd;
+        outEnd = totalLen - revStart;
+        return true;
+    }
+    bool FindInText(const std::wstring& editFieldText, size_t searchFrom, const std::wstring& findWhat, bool matchCase, bool wholeWord, DWORD& outStart, DWORD& outEnd)
+    {
+        std::wstring haystack = editFieldText;
         std::wstring needle   = findWhat;
         if (!matchCase) {
             std::transform(haystack.begin(), haystack.end(), haystack.begin(), [](wchar_t c) { return std::towlower(c); });
             std::transform(  needle.begin(),   needle.end(),   needle.begin(), [](wchar_t c) { return std::towlower(c); });
         }
-
-        size_t searchFrom = selStart+1;
         size_t pos = haystack.find(needle, searchFrom);
-
         if (pos == std::wstring::npos)
             return false;
 

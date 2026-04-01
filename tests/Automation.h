@@ -238,7 +238,7 @@ namespace TestAutomation
         }
     };
 
-    class FileDirtyMessageBox : private MessageBoxUtils
+    class FileDirtyMessageBox
     {
         void ClickButton(int id)
         {
@@ -254,7 +254,7 @@ namespace TestAutomation
             messageBox = WindowUtils::WaitForWindow(5s, [&pid]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}); });
             Assert::AreNotEqual(nullptr, messageBox, "Exit dialog not found");
         }
-        std::wstring GetStaticMessage() const { return GetStaticText(messageBox); }
+        std::wstring GetStaticMessage() const { return MessageBoxUtils::GetStaticText(messageBox); }
 
         void PressDontSave() { ClickButton(IDNO); }
         void PressSave    () { ClickButton(IDYES); }
@@ -395,7 +395,7 @@ namespace TestAutomation
         }
     };
 
-    class ModalMessageBox : private MessageBoxUtils
+    class ModalMessageBox
     {
         HWND msgBox;
         std::function<void()> onDismissed;
@@ -431,7 +431,7 @@ namespace TestAutomation
             Poll::While(1s, 1ms, [&]() { return IsWindowVisible(findDlg); });
             Assert::IsFalse(IsWindowVisible(findDlg), "Find dialog should have been dismissed by now");
         }
-        std::wstring GetEditFieldText()
+        std::wstring GetEditFieldText() const
         {
             HWND edit = WindowFinder::FindDesiredChildWindow(findDlg, WindowFinder::Has::ClassName(L"Edit"));
 
@@ -444,19 +444,35 @@ namespace TestAutomation
             s.resize(len);
             return s;
         }
+        void SetEditFieldText(const std::wstring& criterion)
+        {
+            HWND edit = WindowFinder::FindDesiredChildWindow(findDlg, WindowFinder::Has::ClassName(L"Edit"));
+            SendMessage(edit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(criterion.c_str()));
+        }
+        void SelectWholeWordCheckbox(bool b)
+        {
+            HWND checkBox = WindowFinder::FindDesiredChildWindow(findDlg, WindowFinder::Has::ClassName(L"Button"), WindowFinder::Has::Caption(L"Match &whole word only"));
+            SendMessageW(checkBox, BM_SETCHECK, b ? BST_CHECKED : BST_UNCHECKED, 0);
+        }
+
         void FindNext()
         {
             HWND findNext = WindowFinder::FindDesiredChildWindow(findDlg, WindowFinder::Has::ClassName(L"Button"), WindowFinder::Has::Caption(L"&Find Next"));
+            if (!(GetWindowLong(findNext, GWL_STYLE) & BS_DEFPUSHBUTTON))
+            {   // @#%@# don't know why this is necessary, but it works
+                PostMessage(findNext, BM_CLICK, 0, 0);
+                Poll::Until(1s, 1ms, [&]() { return (GetWindowLong(findNext, GWL_STYLE) & BS_DEFPUSHBUTTON) != 0; });
+            }
             PostMessage(findNext, BM_CLICK, 0, 0);
         }
     };
-    class UnfoundMessageBox : private MessageBoxUtils
+    class UnfoundMessageBox
     {
         HWND unfound;
     public:
         UnfoundMessageBox(HWND unfound) : unfound(unfound) {}
-        std::wstring GetText() const { return GetStaticText(unfound); }
-        void PushOkButton() { MessageBoxUtils::PushOkButton(unfound); }
+        std::wstring GetText() const { return MessageBoxUtils::GetStaticText(unfound); }
+        void    PushOkButton()       {        MessageBoxUtils::PushOkButton(unfound); }
     };
 
     class SubMenu

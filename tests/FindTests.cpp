@@ -111,4 +111,43 @@ Test FindTests[] = {
             main.ExitViaMenu();
         }
     },
+    { std::string("Whole word searching works"), []()
+        {
+            TestAutomation::MainWindow main;
+
+            auto edit = main.GetEditField();
+            edit.SetText(L" aa aaaaa");
+            edit.SetCursorPosition(0, 0);
+
+            edit.ClearDirtyFlag();
+            Poll::While(1s, 1ms, [&edit]() { return edit.IsDirty(); });
+
+            auto editMenu = main.GetMenu().GetEditMenu();
+            editMenu.SelectMenuItem(IDM_FIND);
+            auto find = main.FindExistingFindDialog();
+
+            find.SetEditFieldText(L"aa");
+            find.SelectWholeWordCheckbox(true);
+            find.FindNext();
+
+            DWORD s=0, e=0;
+            Poll::While(1s, 1ms, [&]()  {   DWORD ss, ee;
+                                            edit.GetCursorPosition(ss, ee);
+                                            return (ss == s) && (ee == e);
+                                        });
+            edit.GetCursorPosition(s, e);
+            Assert::AreEqual(1, s, "should have found a whole word, 'aa' starting at position 1");
+            Assert::AreEqual(3, e, "should have found a whole word, 'aa' ending at position 3");
+
+            // now find again should fail
+            find.FindNext();
+            auto mb = main.FindExistingUnfoundMessageBox();
+
+            Assert::AreEqual(L"Cannot find 'aa'", mb.GetText(), "second search for whole word 'aa' should fail");
+            mb.PushOkButton();
+
+            main.ExitViaMenu();
+        }
+    },
+
 };
