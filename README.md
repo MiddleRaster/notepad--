@@ -4,6 +4,7 @@ I liked the old Notepad better, so recreating it here.
 
 It's a work-in-progress:
 
+2026-04-01 - Find (up/down, whole word, case sensitivity, etc.) and tests  
 2026-03-29 - Edit->Paste/SelectAll defer to edit field's implementation, and tests  
 2026-03-26 - Edit->Copy/Cut defer to edit field's implementation, and tests  
 2026-03-24 - Simple 1-level of undo, and tests  
