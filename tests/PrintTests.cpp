@@ -87,13 +87,6 @@ Test FilePrintTests[] = {
         }
     },
 #endif
-    { std::string("Just measuring my screen (for now) including margins"), []()
-        {
-            HDC hdc = GetDC(nullptr);
-            PrintEngine::PrintToHdc(hdc, std::wstring(129, L'W') + L'X');
-            ReleaseDC(nullptr, hdc);
-        }
-    },
     { std::string("No spaces just breaks the word at the right spot"), []()
         {
             count = 0;
