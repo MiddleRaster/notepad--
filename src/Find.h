@@ -33,6 +33,13 @@ public:
 
         *pDlg = FindText(&fr);
     }
+    bool FindNext()
+    {
+        if (fr.lpstrFindWhat[0] == '\0')
+            return false; // no string to search for yet. Return false to let MessageHandler's Handle_Find handle it
+        OnFindNext();
+        return true;
+    }
     bool HandleMessage()
     {
         if (fr.Flags & FR_DIALOGTERM) { *pDlg = nullptr; }
@@ -113,7 +120,7 @@ private:
         {
             while (pos != std::wstring::npos)
             {
-                bool leftOk = (pos == 0) || !iswalnum(haystack[pos - 1]);
+                bool  leftOk = (pos == 0) || !iswalnum(haystack[pos - 1]);
                 bool rightOk = (pos+needle.size() >= haystack.size()) || !iswalnum(haystack[pos+needle.size()]);
                 if (leftOk && rightOk)
                     break;

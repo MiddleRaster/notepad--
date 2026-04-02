@@ -203,4 +203,46 @@ Test FindTests[] = {
             main.ExitViaMenu();
         }
     },
+    { std::string("User can find the next item by using the menus to select 'Find &next'"), []()
+        {
+            TestAutomation::MainWindow main;
+            auto edit = main.GetEditField();
+            edit.SetText(L"User can find the next item by using the menus to select 'Find &next'");
+            edit.SetCursorPosition(0, 0);
+            edit.ClearDirtyFlag();
+            Poll::While(1s, 1ms, [&edit]() { return edit.IsDirty(); });
+
+            auto editMenu = main.GetMenu().GetEditMenu();
+            editMenu.SelectMenuItem(IDM_FIND);
+
+            auto find = main.FindExistingFindDialog();
+            find.SetEditFieldText(L" ");
+            find.FindNext();
+
+            Poll::While(1s, 1ms, [&]() {   DWORD ss, ee;
+                                            edit.GetCursorPosition(ss, ee);
+                                            return (ss == 0) && (ee == 0);
+                                        });
+            DWORD s=0, e=0;
+            edit.GetCursorPosition(s, e);
+            Assert::AreEqual(4, s, "first space is at starting position 4");
+            Assert::AreEqual(5, e, "first space is at ending position 5");
+
+            find.Cancel();
+            editMenu = main.GetMenu().GetEditMenu();
+            editMenu.SelectMenuItem(IDM_FINDNEXT);
+
+            Poll::While(1s, 1ms, [&]() {   DWORD ss, ee;
+                                            edit.GetCursorPosition(ss, ee);
+                                            return (ss == s) && (ee == e);
+                                        });
+            s=0, e=0;
+            edit.GetCursorPosition(s, e);
+            Assert::AreEqual(8, s, "first space is at starting position 8");
+            Assert::AreEqual(9, e, "first space is at ending position 9");
+
+            main.ExitViaMenu();
+        }
+    },
+
 };

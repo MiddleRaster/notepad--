@@ -287,5 +287,10 @@ public:
             selection = selection.substr(start, end - start);
         find.Display(hWnd, edit, &hDlgFind, selection);
     }
+    void Handle_FindNext(HWND hWnd)
+    {
+        if (false == find.FindNext())
+            Handle_Find(hWnd);
+    }
     bool DoDialogMessage(MSG* msg) { return hDlgFind && IsDialogMessage(hDlgFind, msg); }
 };

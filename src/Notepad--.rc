@@ -52,6 +52,7 @@ BEGIN
         MENUITEM "Select &All\tCtrl+A",  IDM_SELECTALL
         MENUITEM SEPARATOR
         MENUITEM "&Find\tCtrl+F",        IDM_FIND
+        MENUITEM "Find &next\tF3",       IDM_FINDNEXT
     END
     POPUP "&Help"
     BEGIN
@@ -75,6 +76,7 @@ BEGIN
     "z",            IDM_UNDO,               VIRTKEY, CONTROL
     "a",            IDM_SELECTALL,          VIRTKEY, CONTROL
     "f",            IDM_FIND,               VIRTKEY, CONTROL
+    VK_F3,          IDM_FINDNEXT,           VIRTKEY
     "?",            IDM_ABOUT,              ASCII,   ALT
     "/",            IDM_ABOUT,              ASCII,   ALT
 END

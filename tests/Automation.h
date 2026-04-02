@@ -535,6 +535,7 @@ namespace TestAutomation
             case IDM_DELETE   : SelectMenuItemViaKeyboard('E', 'D'); break;
             case IDM_SELECTALL: SelectMenuItemViaKeyboard('E', 'A'); break;
             case IDM_FIND     : SelectMenuItemViaKeyboard('E', 'F'); break;
+            case IDM_FINDNEXT : SelectMenuItemViaKeyboard('E', 'N'); break;
             default:
                 Assert::Fail("mapping from menu id to keyboard selection is not implemented");
                 break;

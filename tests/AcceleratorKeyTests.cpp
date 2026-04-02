@@ -215,4 +215,70 @@ Test AcceleratorKeyTests[] = {
             main.ExitViaMenu();
         }
     },
+    { std::string("The F3 key works"), []()
+        {
+            TestAutomation::MainWindow main;
+            auto edit = main.GetEditField();
+            edit.SetText(L"The F3 key works");
+            edit.ClearDirtyFlag();
+            Poll::While(1s, 1ms, [&edit]() { return edit.IsDirty(); });
+
+            edit.SetCursorPosition(0, 0);
+            Poll::Until(1s, 1ms, [&]()  {   DWORD ss, ee;
+                                            edit.GetCursorPosition(ss, ee);
+                                            return (0 == ss) && (0 == ee);
+                                        });
+
+            auto editMenu = main.GetMenu().GetEditMenu();
+            editMenu.SelectMenuItem(IDM_FIND);
+            auto find = main.FindExistingFindDialog();
+            find.SetEditFieldText(L"k");
+            find.FindNext();
+            Poll::While(1s, 1ms, [&]()  {   DWORD ss, ee;
+                                            edit.GetCursorPosition(ss, ee);
+                                            return (0 == ss) && (0 == ee);
+                                        });
+            DWORD s, e;
+            edit.GetCursorPosition(s, e);
+            Assert::AreEqual(7, s, "should have found first 'k' at starting position 7");
+            Assert::AreEqual(8, e, "should have found first 'k' at ending position 7");
+
+            // find again via F3
+            main.EnsureInForeground();
+            main.SendKey((WORD)VK_F3, TestAutomation::MainWindow::KeyStates::None);
+
+            Poll::While(1s, 1ms, [&]()  {   DWORD ss, ee;
+                                            edit.GetCursorPosition(ss, ee);
+                                            return (7 == ss) && (8 == ee);
+                                        });
+            edit.GetCursorPosition(s, e);
+            Assert::AreEqual(14, s, "should have found second 'k' at starting position 14");
+            Assert::AreEqual(15, e, "should have found second 'k' at ending position 15");
+
+            main.ExitViaMenu();
+        }
+    },
+    { std::string("If nothing selected yet, the F3 key puts up the Find dialog box"), []()
+        {
+            TestAutomation::MainWindow main;
+            auto edit = main.GetEditField();
+            edit.SetText(L"If nothing selected yet, the F3 key puts up the Find dialog box");
+            edit.ClearDirtyFlag();
+            Poll::While(1s, 1ms, [&edit]() { return edit.IsDirty(); });
+
+            edit.SetCursorPosition(0, 0);
+            Poll::Until(1s, 1ms, [&]() {   DWORD ss, ee;
+                                            edit.GetCursorPosition(ss, ee);
+                                            return (0 == ss) && (0 == ee);
+                                        });
+
+            main.EnsureInForeground();
+            main.SendKey((WORD)VK_F3, TestAutomation::MainWindow::KeyStates::None);
+
+            auto find = main.FindExistingFindDialog();
+            find.Cancel();
+
+            main.ExitViaMenu();
+        }
+    },
 };
