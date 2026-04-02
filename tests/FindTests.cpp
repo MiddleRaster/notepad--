@@ -149,5 +149,58 @@ Test FindTests[] = {
             main.ExitViaMenu();
         }
     },
+    { std::string("Searching in reverse works"), []()
+        {
+            TestAutomation::MainWindow main;
 
+            auto edit = main.GetEditField();
+            edit.SetText(L"aaa");
+            edit.SetCursorPosition(3, 3);
+
+            edit.ClearDirtyFlag();
+            Poll::While(1s, 1ms, [&edit]() { return edit.IsDirty(); });
+
+            auto editMenu = main.GetMenu().GetEditMenu();
+            editMenu.SelectMenuItem(IDM_FIND);
+            auto find = main.FindExistingFindDialog();
+
+            find.SetEditFieldText(L"a");
+            find.SelectUpRadioButton();
+            find.FindNext();
+
+            DWORD s=3, e=3;
+            Poll::While(1s, 1ms, [&]() {   DWORD ss, ee;
+                                            edit.GetCursorPosition(ss, ee);
+                                            return (ss == s) && (ee == e);
+                                        });
+            edit.GetCursorPosition(s, e);
+            Assert::AreEqual(2, s, "should have found 'a' starting at position 2");
+            Assert::AreEqual(3, e, "should have found 'a' ending at position 3");
+
+            // do another one, for good measure
+            find.FindNext();
+            s=2, e=3;
+            Poll::While(1s, 1ms, [&]() {   DWORD ss, ee;
+                                            edit.GetCursorPosition(ss, ee);
+                                            return (ss == s) && (ee == e);
+                                        });
+            edit.GetCursorPosition(s, e);
+            Assert::AreEqual(1, s, "should have found 'a' starting at position 1");
+            Assert::AreEqual(2, e, "should have found 'a' ending at position 2");
+
+            // now reverse direction
+            find.SelectDownRadioButton();
+            find.FindNext();
+            s=1, e=2;
+            Poll::While(1s, 1ms, [&]() {   DWORD ss, ee;
+                                            edit.GetCursorPosition(ss, ee);
+                                            return (ss == s) && (ee == e);
+                                        });
+            edit.GetCursorPosition(s, e);
+            Assert::AreEqual(2, s, "should have found 'a' starting at position 1");
+            Assert::AreEqual(3, e, "should have found 'a' ending at position 2");
+
+            main.ExitViaMenu();
+        }
+    },
 };

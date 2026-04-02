@@ -455,6 +455,14 @@ namespace TestAutomation
             SendMessageW(checkBox, BM_SETCHECK, b ? BST_CHECKED : BST_UNCHECKED, 0);
         }
 
+        void SelectDirection(bool down)
+        {
+            HWND radio = WindowFinder::FindDesiredChildWindow(findDlg, WindowFinder::Has::ClassName(L"Button"), down ? WindowFinder::Has::Caption(L"&Down") : WindowFinder::Has::Caption(L"&Up"));
+            PostMessage(radio, BM_CLICK, 0, 0);
+        }
+        void SelectUpRadioButton  () { SelectDirection(false); }
+        void SelectDownRadioButton() { SelectDirection(true ); }
+
         void FindNext()
         {
             HWND findNext = WindowFinder::FindDesiredChildWindow(findDlg, WindowFinder::Has::ClassName(L"Button"), WindowFinder::Has::Caption(L"&Find Next"));
