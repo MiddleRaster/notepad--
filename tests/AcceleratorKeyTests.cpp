@@ -281,4 +281,21 @@ Test AcceleratorKeyTests[] = {
             main.ExitViaMenu();
         }
     },
+    { std::string("Ctrl-H displays Replace dialogbox"), []()
+        {
+            TestAutomation::MainWindow main;
+            auto edit = main.GetEditField();
+            edit.SetText(L"Ctrl-H displays Replace dialogbox");
+            edit.ClearDirtyFlag();
+            Poll::While(1s, 1ms, [&edit]() { return edit.IsDirty(); });
+
+            main.EnsureInForeground();
+            main.SendKey('H', TestAutomation::MainWindow::Control);
+
+            auto replace = main.FindExistingReplaceDialog();
+            replace.Cancel();
+
+            main.ExitViaMenu();
+        }
+    },
 };

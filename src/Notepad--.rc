@@ -77,6 +77,7 @@ BEGIN
     "a",            IDM_SELECTALL,          VIRTKEY, CONTROL
     "f",            IDM_FIND,               VIRTKEY, CONTROL
     VK_F3,          IDM_FINDNEXT,           VIRTKEY
+    "h",            IDM_REPLACE,            VIRTKEY, CONTROL
     "?",            IDM_ABOUT,              ASCII,   ALT
     "/",            IDM_ABOUT,              ASCII,   ALT
 END

@@ -8,8 +8,18 @@
 
 class Find
 {
+    void FillInStruct(HWND hWnd, HWND hEdit, HWND* pDialog, const std::wstring& text)
+    {
+        pDlg         = pDialog; // hang onto pointer, so we can zero it out when we terminate
+        edit         = hEdit;
+        fr.hwndOwner = hWnd;
+        text.copy(fr.lpstrFindWhat, 260, 0);
+        fr.Flags    &= ~FR_DIALOGTERM;  // unset FR_DIALOGTERM, otherwise we'll just terminate again
+    }
+
     FINDREPLACEW fr  = {};
-    WCHAR findBuf[260]{}; // TODO:  REVIEW:  BUGBUG:  alloc as wstring?
+    WCHAR    findBuf[260]{}; // TODO:  REVIEW:  BUGBUG:  alloc as wstring?
+    WCHAR replaceBuf[260]{}; // TODO:  REVIEW:  BUGBUG:  alloc as wstring?
     HWND edit{};
     HWND* pDlg{};
 
@@ -19,20 +29,21 @@ public:
         fr.lStructSize      = sizeof(fr);
         fr.lpstrFindWhat    = findBuf;
         fr.wFindWhatLen     = ARRAYSIZE(findBuf);
-     // fr.lpstrReplaceWith = szReplaceBuf; // only for ReplaceText
-     // fr.wReplaceWithLen  = ARRAYSIZE(szReplaceBuf);
+        fr.lpstrReplaceWith = replaceBuf;
+        fr.wReplaceWithLen  = ARRAYSIZE(replaceBuf);
         fr.Flags            = FR_DOWN;
     }
-    void Display(HWND hWnd, HWND hEdit, HWND* pDialog, const std::wstring& text)
+    void DisplayFindDialog(HWND hWnd, HWND hEdit, HWND* pDialog, const std::wstring& text)
     {
-        pDlg         = pDialog; // hang onto pointer, so we can zero it out when we terminate
-        edit         = hEdit;
-        fr.hwndOwner = hWnd;
-        text.copy(fr.lpstrFindWhat, 260, 0);
-        fr.Flags    &= ~FR_DIALOGTERM;  // unset FR_DIALOGTERM, otherwise we'll just terminate again
-
+        FillInStruct(hWnd, hEdit, pDialog, text);
         *pDlg = FindText(&fr);
     }
+    void DisplayReplaceDialog(HWND hWnd, HWND hEdit, HWND* pDialog, const std::wstring& text)
+    {
+        FillInStruct(hWnd, hEdit, pDialog, text);
+        *pDlg = ReplaceText(&fr);
+    }
+
     bool FindNext()
     {
         if (fr.lpstrFindWhat[0] == '\0')

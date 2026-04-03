@@ -15,6 +15,24 @@
 
 class MessageHandler
 {
+    void GetEditFieldSelection(DWORD& start, DWORD& end) const { SendMessage(edit, EM_GETSEL, (WPARAM)&start, (LPARAM)&end); }
+    std::wstring GetEditFieldText() const
+    {
+        const LRESULT length = SendMessageW(edit, WM_GETTEXTLENGTH, 0, 0);
+        std::wstring text(static_cast<size_t>(length) + 1, L'\0');
+        SendMessageW(edit, WM_GETTEXT, static_cast<WPARAM>(text.size()), reinterpret_cast<LPARAM>(text.data()));
+        text.resize(static_cast<size_t>(length));
+        return text;
+    }
+    std::wstring GetSelectedText(DWORD start, DWORD end) const
+    {
+        if (start == end)
+            return {};
+
+        std::wstring selection = GetEditFieldText();
+        return selection.substr(start, end - start);
+    }
+
     HWND edit{};
     std::filesystem::path FilePath{};
     Undo undo;
@@ -137,16 +155,11 @@ public:
         if (!PrintDlgW(&pd))
             return;
 
-        const LRESULT length = SendMessageW(edit, WM_GETTEXTLENGTH, 0, 0);
-        std::wstring text(static_cast<size_t>(length) + 1, L'\0');
-        SendMessageW(edit, WM_GETTEXT, static_cast<WPARAM>(text.size()), reinterpret_cast<LPARAM>(text.data()));
-        text.resize(static_cast<size_t>(length));
-
         DOCINFOW di{};
         di.cbSize      = sizeof(di);
         di.lpszDocName = L"Notepad--";
         StartDocW(pd.hDC, &di);
-        PrintEngine::PrintToHdc(pd.hDC, text);
+        PrintEngine::PrintToHdc(pd.hDC, GetEditFieldText());
         EndDoc(pd.hDC);
         DeleteDC(pd.hDC);
     }
@@ -216,7 +229,7 @@ public:
         EnableMenuItem(hPopup, IDM_UNDO, MF_BYCOMMAND | (undo.CanUndo() ? MF_ENABLED : MF_GRAYED));
 
         DWORD start, end;
-        SendMessage(edit, EM_GETSEL, (WPARAM)&start, (LPARAM)&end);
+        GetEditFieldSelection(start, end);
         EnableMenuItem(hPopup, IDM_COPY,   MF_BYCOMMAND | (start != end ? MF_ENABLED : MF_GRAYED));
         EnableMenuItem(hPopup, IDM_CUT,    MF_BYCOMMAND | (start != end ? MF_ENABLED : MF_GRAYED));
         EnableMenuItem(hPopup, IDM_PASTE,  MF_BYCOMMAND | (IsClipboardFormatAvailable(CF_UNICODETEXT) || IsClipboardFormatAvailable(CF_TEXT) ? MF_ENABLED : MF_GRAYED));
@@ -274,23 +287,19 @@ public:
     void Handle_Find(HWND hWnd)
     {
         DWORD start, end;
-        SendMessage(edit, EM_GETSEL, (WPARAM)&start, (LPARAM)&end);
-
-        const LRESULT length = SendMessageW(edit, WM_GETTEXTLENGTH, 0, 0);
-        std::wstring selection(static_cast<size_t>(length) + 1, L'\0');
-        SendMessageW(edit, WM_GETTEXT, static_cast<WPARAM>(selection.size()), reinterpret_cast<LPARAM>(selection.data()));
-        selection.resize(static_cast<size_t>(length));
-
-        if (start == end)
-            selection = L"";
-        else
-            selection = selection.substr(start, end - start);
-        find.Display(hWnd, edit, &hDlgFind, selection);
+        GetEditFieldSelection(start, end);
+        find.DisplayFindDialog(hWnd, edit, &hDlgFind, GetSelectedText(start, end));
     }
     void Handle_FindNext(HWND hWnd)
     {
         if (false == find.FindNext())
             Handle_Find(hWnd);
+    }
+    void Handle_Replace(HWND hWnd)
+    {
+        DWORD start, end;
+        GetEditFieldSelection(start, end);
+        find.DisplayReplaceDialog(hWnd, edit, &hDlgFind, GetSelectedText(start, end));
     }
     bool DoDialogMessage(MSG* msg) { return hDlgFind && IsDialogMessage(hDlgFind, msg); }
 };

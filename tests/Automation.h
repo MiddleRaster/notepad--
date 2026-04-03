@@ -421,16 +421,22 @@ namespace TestAutomation
             Assert::IsFalse(IsWindowVisible(printDlg), "print dialog should have been dismissed");
         }
     };
+
+    struct FindReplaceCommonalities
+    {
+        static void Cancel(HWND dlg, const std::string& assertMessage)
+        {
+            HWND cancel = WindowFinder::FindDesiredChildWindow(dlg, WindowFinder::Has::ClassName(L"Button"), WindowFinder::Has::Caption(L"Cancel"));
+            PostMessage(cancel, BM_CLICK, 0, 0);
+            Poll::While(1s, 1ms, [&]() { return IsWindowVisible(dlg); });
+            Assert::IsFalse(IsWindowVisible(dlg), assertMessage);
+        }
+    };
+
     struct FindDialog
     {
         HWND findDlg;
-        void Cancel()
-        {
-            HWND cancel = WindowFinder::FindDesiredChildWindow(findDlg, WindowFinder::Has::ClassName(L"Button"), WindowFinder::Has::Caption(L"Cancel"));
-            PostMessage(cancel, BM_CLICK, 0, 0);
-            Poll::While(1s, 1ms, [&]() { return IsWindowVisible(findDlg); });
-            Assert::IsFalse(IsWindowVisible(findDlg), "Find dialog should have been dismissed by now");
-        }
+        void Cancel() { FindReplaceCommonalities::Cancel(findDlg, "Find dialog should have been dismissed by now"); }
         std::wstring GetEditFieldText() const
         {
             HWND edit = WindowFinder::FindDesiredChildWindow(findDlg, WindowFinder::Has::ClassName(L"Edit"));
@@ -474,6 +480,12 @@ namespace TestAutomation
             PostMessage(findNext, BM_CLICK, 0, 0);
         }
     };
+    struct ReplaceDialog
+    {
+        HWND replaceDlg;
+        void Cancel() { FindReplaceCommonalities::Cancel(replaceDlg, "Replace dialog should have been dismissed by now"); }
+    };
+
     class UnfoundMessageBox
     {
         HWND unfound;
@@ -790,6 +802,12 @@ namespace TestAutomation
             HWND findDlg = WindowUtils::WaitForWindow(2s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Is::Visible); });
             Assert::AreNotEqual(nullptr, findDlg, "Find dialog not found");
             return {findDlg};
+        }
+        ReplaceDialog FindExistingReplaceDialog()
+        {
+            HWND replaceDlg = WindowUtils::WaitForWindow(2s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Is::Visible); });
+            Assert::AreNotEqual(nullptr, replaceDlg, "Replace dialog not found");
+            return {replaceDlg};
         }
         UnfoundMessageBox FindExistingUnfoundMessageBox()
         {
