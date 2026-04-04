@@ -184,4 +184,42 @@ Test ReplaceTests[] = {
             main.ExitViaMenu();
         }
     },
+    { std::string("Pressing ReplaceAll button works"), []()
+        {
+            TestAutomation::MainWindow main;
+
+            auto edit = main.GetEditField();
+            edit.SetText(L"aaaaaa");
+            edit.SetCursorPosition(3, 3);
+
+            edit.ClearDirtyFlag();
+            Poll::While(1s, 1ms, [&edit]() { return edit.IsDirty(); });
+
+            auto editMenu = main.GetMenu().GetEditMenu();
+            editMenu.SelectMenuItem(IDM_REPLACE);
+            auto replace = main.FindExistingReplaceDialog();
+
+            replace.SetFindText   (L"a");
+            replace.SetReplaceText(L"b");
+            replace.ReplaceAll();
+
+            Poll::While(1s, 1ms, [&]() { return edit.GetText() == L"aaaaaa"; });
+            Assert::AreEqual(L"bbbbbb", edit.GetText(), "ReplaceAll should have replaced all 'a' chars with 'b' chars");
+
+            Poll::Until(1s, 1ms, [&edit]()  {   DWORD ss, ee;
+                                                edit.GetCursorPosition(ss, ee);
+                                                return ss == 0 && ee == 0;
+                                            });
+            DWORD s=0, e=0;
+            edit.GetCursorPosition(s, e);
+            Assert::AreEqual(0, s, "start selection position should be reset to 0");
+            Assert::AreEqual(0, e,   "end selection position should be reset to 0");
+            Assert::IsTrue(edit.IsDirty(), "edit field should be dirty");
+
+            edit.ClearDirtyFlag();
+            Poll::While(1s, 1ms, [&edit]() { return edit.IsDirty(); });
+            replace.Cancel();
+            main.ExitViaMenu();
+        }
+    },
 };

@@ -483,8 +483,9 @@ namespace TestAutomation
         void Cancel() { FindReplaceCommonalities::Cancel(replaceDlg, "Replace dialog should have been dismissed by now"); }
         void SetFindText   (const std::wstring&    find) { SendMessage(GetDlgItem(replaceDlg, edt1), WM_SETTEXT, 0, reinterpret_cast<LPARAM>(   find.c_str())); }
         void SetReplaceText(const std::wstring& replace) { SendMessage(GetDlgItem(replaceDlg, edt2), WM_SETTEXT, 0, reinterpret_cast<LPARAM>(replace.c_str())); }
-        void Replace() { FindReplaceCommonalities::PushNextOrReplaceButton(replaceDlg, L"&Replace"); }
         void SelectWholeWordCheckbox(bool b) { SendMessageW(GetDlgItem(replaceDlg, chx1), BM_SETCHECK, b ? BST_CHECKED : BST_UNCHECKED, 0); }
+        void Replace   () { FindReplaceCommonalities::PushNextOrReplaceButton(replaceDlg, L"&Replace"); }
+        void ReplaceAll() { FindReplaceCommonalities::PushNextOrReplaceButton(replaceDlg, L"Replace &All"); }
     };
 
     class UnfoundMessageBox

@@ -60,7 +60,27 @@ public:
         return true;
     }
 private:
-    void OnFindOrReplace(auto onFoundLambda)
+    void ReplaceIt(DWORD s, DWORD& e)
+    {
+        std::wstring text  = GetEditText();
+        std::wstring end   = text.substr(e);
+        std::wstring start = text.substr(0, s);
+
+        start += fr.lpstrReplaceWith;
+        e      = static_cast<DWORD>(start.length());
+        start += end;
+
+        SetWindowTextW(edit, start.c_str());
+        SendMessageW  (edit, EM_SETMODIFY, TRUE, 0); // a successful replacement dirties the edit field
+    }
+    void PopUpMessageBox()
+    {
+        EnableWindow(*pDlg, FALSE);
+        MessageBox  (*pDlg, std::format(L"Cannot find '{}'", fr.lpstrFindWhat).c_str(), L"Find", MB_OK | MB_ICONINFORMATION | MB_SYSTEMMODAL);
+        EnableWindow(*pDlg, TRUE);
+    }
+
+    void OnFindOrReplace(auto onFoundLambda, auto onFinishedLambda)
     {
         DWORD s=0, e=0;
         if (fr.Flags & FR_DOWN ? FindNextOne    (fr.lpstrFindWhat, !!(fr.Flags & FR_MATCHCASE), !!(fr.Flags & FR_WHOLEWORD), s, e)
@@ -70,29 +90,21 @@ private:
             SendMessage(edit, EM_SETSEL,      s, e);
             SendMessage(edit, EM_SCROLLCARET, 0, 0);
             SetFocus   (edit);
-        } else {
-            EnableWindow(*pDlg, FALSE);
-            MessageBox  (*pDlg, std::format(L"Cannot find '{}'", fr.lpstrFindWhat).c_str(), L"Find", MB_OK | MB_ICONINFORMATION | MB_SYSTEMMODAL);
-            EnableWindow(*pDlg, TRUE);
-        }
+        } else
+            onFinishedLambda();
     }
-    void OnFindNext() { OnFindOrReplace([](DWORD, DWORD) {}); }
-    void OnReplace()
+    void OnFindNext() { OnFindOrReplace([    ](DWORD,   DWORD   ) {},                          [this]() { return PopUpMessageBox(); }); }
+    void OnReplace () { OnFindOrReplace([this](DWORD s, DWORD& e) { return ReplaceIt(s, e); }, [this]() { return PopUpMessageBox(); }); }
+    void OnReplaceAll()
     {
-        OnFindOrReplace([&](DWORD s, DWORD& e)  {   // s & e are filled out:  cut the string there.
-                                                    std::wstring text  = GetEditText();
-                                                    std::wstring end   = text.substr(e);
-                                                    std::wstring start = text.substr(0, s);
+        SendMessageW(edit, EM_SETSEL, 0, 0); // all means all, even the ones before the cursor
 
-                                                    start += fr.lpstrReplaceWith;
-                                                    e      = static_cast<DWORD>(start.length());
-                                                    start += end;
-
-                                                    SetWindowTextW(edit, start.c_str());
-                                                    SendMessageW  (edit, EM_SETMODIFY, TRUE, 0); // a successful replacement dirties the edit field
-                                                });
+        bool quit = false;
+        while (!quit) {
+            OnFindOrReplace([this](DWORD s, DWORD& e) { return ReplaceIt(s, e); }, [&quit]() { quit = true; });
+        }
+        SendMessageW(edit, EM_SETSEL, 0, 0); // set cursor to beginning
     }
-    void OnReplaceAll() {}
 
     std::wstring GetEditText()
     {
