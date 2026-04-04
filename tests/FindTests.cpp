@@ -13,9 +13,21 @@ namespace TDD20
 }
 
 Test FindTests[] = {
-    { std::string("The Edit->Find menu item is always enabled"), []()
+    { std::string("The Edit->Find menu item is disabled if edit field is empty"), []()
         {
             TestAutomation::MainWindow main;
+            Assert::IsFalse(main.GetMenu().GetEditMenu().IsMenuItemEnabled(IDM_FIND), "the Edit->Find menu item should be disabled");
+        }
+    },
+    { std::string("The Edit->Find menu item is enabled if edit field is not empty"), []()
+        {
+            TestAutomation::MainWindow main;
+
+            auto edit = main.GetEditField();
+            edit.SetText(L"The Edit->Find menu item is enabled if edit field is not empty");
+            edit.ClearDirtyFlag();
+            Poll::While(1s, 1ms, [&edit]() { return edit.IsDirty(); });
+
             Assert::IsTrue(main.GetMenu().GetEditMenu().IsMenuItemEnabled(IDM_FIND), "the Edit->Find menu item should be enabled");
         }
     },
@@ -203,6 +215,26 @@ Test FindTests[] = {
             main.ExitViaMenu();
         }
     },
+    { std::string("Find &next menu item is disabled if no edit field text"), []()
+        {
+            TestAutomation::MainWindow main;
+            Assert::IsFalse(main.GetMenu().GetEditMenu().IsMenuItemEnabled(IDM_FINDNEXT), "the Edit->FindNext menu item should be disabled");
+            main.ExitViaMenu();
+        }
+    },
+    { std::string("Find &next menu item is enabled when there is text in the edit field text"), []()
+        {
+            TestAutomation::MainWindow main;
+
+            auto edit = main.GetEditField();
+            edit.SetText(L"Find &next menu item is enabled when there is text in the edit field text");
+            edit.ClearDirtyFlag();
+            Poll::While(1s, 1ms, [&edit]() { return edit.IsDirty(); });
+
+            Assert::IsTrue(main.GetMenu().GetEditMenu().IsMenuItemEnabled(IDM_FINDNEXT), "the Edit->FindNext menu item should be enabled");
+            main.ExitViaMenu();
+        }
+    },
     { std::string("User can find the next item by using the menus to select 'Find &next'"), []()
         {
             TestAutomation::MainWindow main;
@@ -244,5 +276,4 @@ Test FindTests[] = {
             main.ExitViaMenu();
         }
     },
-
 };

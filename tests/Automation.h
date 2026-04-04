@@ -24,12 +24,6 @@ namespace
 
     class ProcessGuard
     {
-        ProcessGuard           (                    ) = delete;
-        ProcessGuard           (const ProcessGuard& ) = delete;
-        ProcessGuard& operator=(const ProcessGuard& ) = delete;
-        ProcessGuard           (      ProcessGuard&&) = delete;
-        ProcessGuard& operator=(      ProcessGuard&&) = delete;
-
         PROCESS_INFORMATION pi{};
     public:
         const HANDLE& hProcess;
@@ -216,7 +210,7 @@ namespace TestAutomation
     {
         static std::wstring GetStaticText(HWND hwnd)
         {
-            HWND staticText = WindowFinder::FindDesiredChildWindow(hwnd, WindowFinder::Has::ClassName(L"Static"), WindowFinder::Has::NotStyle{SS_ICON});
+            HWND staticText = WindowFinder::FindDesiredChildWindow(hwnd, WindowFinder::Has::ClassName{L"Static"}, WindowFinder::Has::NotStyle{SS_ICON});
             Assert::AreNotEqual(nullptr, staticText, "static text field not found");
 
             std::wstring text;
@@ -426,10 +420,23 @@ namespace TestAutomation
     {
         static void Cancel(HWND dlg, const std::string& assertMessage)
         {
-            HWND cancel = WindowFinder::FindDesiredChildWindow(dlg, WindowFinder::Has::ClassName(L"Button"), WindowFinder::Has::Caption(L"Cancel"));
+            HWND cancel = WindowFinder::FindDesiredChildWindow(dlg, WindowFinder::Has::ClassName{L"Button"}, WindowFinder::Has::Caption{L"Cancel"});
             PostMessage(cancel, BM_CLICK, 0, 0);
             Poll::While(1s, 1ms, [&]() { return IsWindowVisible(dlg); });
             Assert::IsFalse(IsWindowVisible(dlg), assertMessage);
+        }
+        static void PushNextOrReplaceButton(HWND dlg, const std::wstring& caption)
+        {
+            HWND button = WindowFinder::FindDesiredChildWindow(dlg, WindowFinder::Has::ClassName{L"Button"}, WindowFinder::Has::Caption{caption});
+            if (!(GetWindowLong(button, GWL_STYLE) & BS_DEFPUSHBUTTON))
+            {   // @#%@# don't know why this is necessary, but it works
+                PostMessage(button, BM_CLICK, 0, 0);
+                Poll::Until(1s, 1ms, [&]() {
+                                                SendMessage(dlg, DM_SETDEFID, GetDlgCtrlID(button), 0);
+                                                return (GetWindowLong(button, GWL_STYLE) & BS_DEFPUSHBUTTON) == BS_DEFPUSHBUTTON;
+                                           });
+            }
+            PostMessage(button, BM_CLICK, 0, 0);
         }
     };
 
@@ -439,7 +446,7 @@ namespace TestAutomation
         void Cancel() { FindReplaceCommonalities::Cancel(findDlg, "Find dialog should have been dismissed by now"); }
         std::wstring GetEditFieldText() const
         {
-            HWND edit = WindowFinder::FindDesiredChildWindow(findDlg, WindowFinder::Has::ClassName(L"Edit"));
+            HWND edit = WindowFinder::FindDesiredChildWindow(findDlg, WindowFinder::Has::ClassName{L"Edit"});
 
             int len = static_cast<int>(SendMessage(edit, WM_GETTEXTLENGTH, 0, 0));
             if (len <= 0)
@@ -452,38 +459,32 @@ namespace TestAutomation
         }
         void SetEditFieldText(const std::wstring& criterion)
         {
-            HWND edit = WindowFinder::FindDesiredChildWindow(findDlg, WindowFinder::Has::ClassName(L"Edit"));
+            HWND edit = WindowFinder::FindDesiredChildWindow(findDlg, WindowFinder::Has::ClassName{L"Edit"});
             SendMessage(edit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(criterion.c_str()));
         }
         void SelectWholeWordCheckbox(bool b)
         {
-            HWND checkBox = WindowFinder::FindDesiredChildWindow(findDlg, WindowFinder::Has::ClassName(L"Button"), WindowFinder::Has::Caption(L"Match &whole word only"));
+            HWND checkBox = WindowFinder::FindDesiredChildWindow(findDlg, WindowFinder::Has::ClassName{L"Button"}, WindowFinder::Has::Caption(L"Match &whole word only"));
             SendMessageW(checkBox, BM_SETCHECK, b ? BST_CHECKED : BST_UNCHECKED, 0);
         }
 
         void SelectDirection(bool down)
         {
-            HWND radio = WindowFinder::FindDesiredChildWindow(findDlg, WindowFinder::Has::ClassName(L"Button"), down ? WindowFinder::Has::Caption(L"&Down") : WindowFinder::Has::Caption(L"&Up"));
+            HWND radio = WindowFinder::FindDesiredChildWindow(findDlg, WindowFinder::Has::ClassName{L"Button"}, down ? WindowFinder::Has::Caption(L"&Down") : WindowFinder::Has::Caption(L"&Up"));
             PostMessage(radio, BM_CLICK, 0, 0);
         }
         void SelectUpRadioButton  () { SelectDirection(false); }
         void SelectDownRadioButton() { SelectDirection(true ); }
-
-        void FindNext()
-        {
-            HWND findNext = WindowFinder::FindDesiredChildWindow(findDlg, WindowFinder::Has::ClassName(L"Button"), WindowFinder::Has::Caption(L"&Find Next"));
-            if (!(GetWindowLong(findNext, GWL_STYLE) & BS_DEFPUSHBUTTON))
-            {   // @#%@# don't know why this is necessary, but it works
-                PostMessage(findNext, BM_CLICK, 0, 0);
-                Poll::Until(1s, 1ms, [&]() { return (GetWindowLong(findNext, GWL_STYLE) & BS_DEFPUSHBUTTON) != 0; });
-            }
-            PostMessage(findNext, BM_CLICK, 0, 0);
-        }
+        void FindNext() { FindReplaceCommonalities::PushNextOrReplaceButton(findDlg, L"&Find Next"); }
     };
     struct ReplaceDialog
     {
         HWND replaceDlg;
         void Cancel() { FindReplaceCommonalities::Cancel(replaceDlg, "Replace dialog should have been dismissed by now"); }
+        void SetFindText   (const std::wstring&    find) { SendMessage(GetDlgItem(replaceDlg, edt1), WM_SETTEXT, 0, reinterpret_cast<LPARAM>(   find.c_str())); }
+        void SetReplaceText(const std::wstring& replace) { SendMessage(GetDlgItem(replaceDlg, edt2), WM_SETTEXT, 0, reinterpret_cast<LPARAM>(replace.c_str())); }
+        void Replace() { FindReplaceCommonalities::PushNextOrReplaceButton(replaceDlg, L"&Replace"); }
+        void SelectWholeWordCheckbox(bool b) { SendMessageW(GetDlgItem(replaceDlg, chx1), BM_SETCHECK, b ? BST_CHECKED : BST_UNCHECKED, 0); }
     };
 
     class UnfoundMessageBox
@@ -548,6 +549,7 @@ namespace TestAutomation
             case IDM_SELECTALL: SelectMenuItemViaKeyboard('E', 'A'); break;
             case IDM_FIND     : SelectMenuItemViaKeyboard('E', 'F'); break;
             case IDM_FINDNEXT : SelectMenuItemViaKeyboard('E', 'N'); break;
+            case IDM_REPLACE  : SelectMenuItemViaKeyboard('E', 'R'); break;
             default:
                 Assert::Fail("mapping from menu id to keyboard selection is not implemented");
                 break;
@@ -741,7 +743,7 @@ namespace TestAutomation
         }
         SaveAsDialog FindExistingFileSaveAsDialogBox()
         {
-            HWND saveAs = WindowUtils::WaitForWindow(5s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Has::EitherChildClass{ L"DUIViewWndClassName", L"DirectUIHWND" }); });
+            HWND saveAs = WindowUtils::WaitForWindow(5s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Has::EitherChildClass{L"DUIViewWndClassName", L"DirectUIHWND"}); });
             Assert::AreNotEqual(nullptr, saveAs, "Save As dialog not found");
             return {saveAs};
         }
@@ -752,7 +754,7 @@ namespace TestAutomation
         }
         OpenDialog FindExistingOpenDialog()
         {
-            HWND openDlg = WindowUtils::WaitForWindow(1s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Has::EitherChildClass{ L"DUIViewWndClassName", L"DirectUIHWND" }); });
+            HWND openDlg = WindowUtils::WaitForWindow(1s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Has::EitherChildClass{L"DUIViewWndClassName", L"DirectUIHWND"}); });
             Assert::AreNotEqual(nullptr, openDlg, "File Open dialog not found");
             return {openDlg};
         }

@@ -154,6 +154,7 @@
     <ClCompile Include="ExitTests.cpp" />
     <ClCompile Include="modules\tdd20.ixx" />
     <ClCompile Include="PrintTests.cpp" />
+    <ClCompile Include="ReplaceTests.cpp" />
     <ClCompile Include="UIA.cpp" />
   </ItemGroup>
   <ItemGroup>

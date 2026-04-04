@@ -13,14 +13,14 @@ class Find
         pDlg         = pDialog; // hang onto pointer, so we can zero it out when we terminate
         edit         = hEdit;
         fr.hwndOwner = hWnd;
-        text.copy(fr.lpstrFindWhat, 260, 0);
         fr.Flags    &= ~FR_DIALOGTERM;  // unset FR_DIALOGTERM, otherwise we'll just terminate again
+        text.copy(fr.lpstrFindWhat, 260, 0);
     }
 
     FINDREPLACEW fr  = {};
     WCHAR    findBuf[260]{}; // TODO:  REVIEW:  BUGBUG:  alloc as wstring?
     WCHAR replaceBuf[260]{}; // TODO:  REVIEW:  BUGBUG:  alloc as wstring?
-    HWND edit{};
+    HWND  edit{};
     HWND* pDlg{};
 
 public:
@@ -60,12 +60,13 @@ public:
         return true;
     }
 private:
-    void OnFindNext()
+    void OnFindOrReplace(auto onFoundLambda)
     {
         DWORD s=0, e=0;
         if (fr.Flags & FR_DOWN ? FindNextOne    (fr.lpstrFindWhat, !!(fr.Flags & FR_MATCHCASE), !!(fr.Flags & FR_WHOLEWORD), s, e)
                                : FindPreviousOne(fr.lpstrFindWhat, !!(fr.Flags & FR_MATCHCASE), !!(fr.Flags & FR_WHOLEWORD), s, e))
         {
+            onFoundLambda(s, e);
             SendMessage(edit, EM_SETSEL,      s, e);
             SendMessage(edit, EM_SCROLLCARET, 0, 0);
             SetFocus   (edit);
@@ -75,7 +76,22 @@ private:
             EnableWindow(*pDlg, TRUE);
         }
     }
-    void OnReplace() {}
+    void OnFindNext() { OnFindOrReplace([](DWORD, DWORD) {}); }
+    void OnReplace()
+    {
+        OnFindOrReplace([&](DWORD s, DWORD& e)  {   // s & e are filled out:  cut the string there.
+                                                    std::wstring text  = GetEditText();
+                                                    std::wstring end   = text.substr(e);
+                                                    std::wstring start = text.substr(0, s);
+
+                                                    start += fr.lpstrReplaceWith;
+                                                    e      = static_cast<DWORD>(start.length());
+                                                    start += end;
+
+                                                    SetWindowTextW(edit, start.c_str());
+                                                    SendMessageW  (edit, EM_SETMODIFY, TRUE, 0); // a successful replacement dirties the edit field
+                                                });
+    }
     void OnReplaceAll() {}
 
     std::wstring GetEditText()
@@ -94,7 +110,7 @@ private:
     {
         DWORD selStart=0, selEnd=0;
         SendMessage(edit, EM_GETSEL, reinterpret_cast<WPARAM>(&selStart), reinterpret_cast<LPARAM>(&selEnd));
-        return FindInText(GetEditText(), selStart+1, findWhat, matchCase, wholeWord, outStart, outEnd);
+        return FindInText(GetEditText(), selStart != selEnd ? selStart+1 : selStart, findWhat, matchCase, wholeWord, outStart, outEnd);
     }
     bool FindPreviousOne(const std::wstring& findWhat, bool matchCase, bool wholeWord, DWORD& outStart, DWORD& outEnd)
     { // re-use FindInText, but reverse the strings first. Clever, eh?

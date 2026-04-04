@@ -53,6 +53,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "&Find\tCtrl+F",        IDM_FIND
         MENUITEM "Find &next\tF3",       IDM_FINDNEXT
+        MENUITEM "&Replace\tCtrl+H",      IDM_REPLACE
     END
     POPUP "&Help"
     BEGIN

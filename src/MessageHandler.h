@@ -226,14 +226,19 @@ public:
 
     void Handle_MenuPopUp(HMENU hPopup)
     {
-        EnableMenuItem(hPopup, IDM_UNDO, MF_BYCOMMAND | (undo.CanUndo() ? MF_ENABLED : MF_GRAYED));
+        EnableMenuItem(hPopup, IDM_UNDO,     MF_BYCOMMAND | (undo.CanUndo() ? MF_ENABLED : MF_GRAYED));
+
+        bool hasText = GetEditFieldText().empty();
+        EnableMenuItem(hPopup, IDM_FIND,     MF_BYCOMMAND | (!hasText ? MF_ENABLED : MF_GRAYED));
+        EnableMenuItem(hPopup, IDM_FINDNEXT, MF_BYCOMMAND | (!hasText ? MF_ENABLED : MF_GRAYED));
+        EnableMenuItem(hPopup, IDM_REPLACE,  MF_BYCOMMAND | (!hasText ? MF_ENABLED : MF_GRAYED));
 
         DWORD start, end;
         GetEditFieldSelection(start, end);
         EnableMenuItem(hPopup, IDM_COPY,   MF_BYCOMMAND | (start != end ? MF_ENABLED : MF_GRAYED));
         EnableMenuItem(hPopup, IDM_CUT,    MF_BYCOMMAND | (start != end ? MF_ENABLED : MF_GRAYED));
-        EnableMenuItem(hPopup, IDM_PASTE,  MF_BYCOMMAND | (IsClipboardFormatAvailable(CF_UNICODETEXT) || IsClipboardFormatAvailable(CF_TEXT) ? MF_ENABLED : MF_GRAYED));
         EnableMenuItem(hPopup, IDM_DELETE, MF_BYCOMMAND | (start != end ? MF_ENABLED : MF_GRAYED));
+        EnableMenuItem(hPopup, IDM_PASTE,  MF_BYCOMMAND | (IsClipboardFormatAvailable(CF_UNICODETEXT) || IsClipboardFormatAvailable(CF_TEXT) ? MF_ENABLED : MF_GRAYED));
     }
     void Handle_EN_CHANGE(HWND) { undo.UpdateUndo(edit); }
     void Handle_Undo     (HWND) { undo.Apply(edit); }
