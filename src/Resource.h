@@ -23,6 +23,9 @@
 #define IDM_FIND                126
 #define IDM_FINDNEXT            127
 #define IDM_REPLACE             128
+#define IDM_GOTO                130
+
+#define IDM_WORDWRAP            140
 
 #define IDM_EXIT                190
 #define IDM_ABOUT               200

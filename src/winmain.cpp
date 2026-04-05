@@ -42,6 +42,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         case IDM_FIND:      messageHandler->Handle_Find      (hWnd);  break;
         case IDM_FINDNEXT:  messageHandler->Handle_FindNext  (hWnd);  break;
         case IDM_REPLACE:   messageHandler->Handle_Replace   (hWnd);  break;
+        case IDM_WORDWRAP:  messageHandler->Handle_WordWrap  (hWnd);  break;
         default: return DefWindowProc(hWnd, message, wParam, lParam);
         }
         break;

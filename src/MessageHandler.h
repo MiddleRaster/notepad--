@@ -41,6 +41,8 @@ class MessageHandler
     UINT uFindMsg{};
     Find find;
 
+    bool wordWrap = false; // my default is 'no word wrap' which is the opposite of new Notepad.
+
     int Handle_WM_CREATE(HWND hWnd)
     {
         edit = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD|WS_VISIBLE|WS_VSCROLL|WS_HSCROLL|ES_LEFT|ES_MULTILINE|ES_AUTOVSCROLL|ES_AUTOHSCROLL, 0, 0, 0, 0, hWnd, reinterpret_cast<HMENU>(IDC_EDITFIELD), GetModuleHandle(nullptr), nullptr);
@@ -235,10 +237,13 @@ public:
 
         DWORD start, end;
         GetEditFieldSelection(start, end);
-        EnableMenuItem(hPopup, IDM_COPY,   MF_BYCOMMAND | (start != end ? MF_ENABLED : MF_GRAYED));
-        EnableMenuItem(hPopup, IDM_CUT,    MF_BYCOMMAND | (start != end ? MF_ENABLED : MF_GRAYED));
-        EnableMenuItem(hPopup, IDM_DELETE, MF_BYCOMMAND | (start != end ? MF_ENABLED : MF_GRAYED));
-        EnableMenuItem(hPopup, IDM_PASTE,  MF_BYCOMMAND | (IsClipboardFormatAvailable(CF_UNICODETEXT) || IsClipboardFormatAvailable(CF_TEXT) ? MF_ENABLED : MF_GRAYED));
+        EnableMenuItem(hPopup, IDM_COPY,     MF_BYCOMMAND | (start != end ? MF_ENABLED : MF_GRAYED));
+        EnableMenuItem(hPopup, IDM_CUT,      MF_BYCOMMAND | (start != end ? MF_ENABLED : MF_GRAYED));
+        EnableMenuItem(hPopup, IDM_DELETE,   MF_BYCOMMAND | (start != end ? MF_ENABLED : MF_GRAYED));
+        EnableMenuItem(hPopup, IDM_PASTE,    MF_BYCOMMAND | (IsClipboardFormatAvailable(CF_UNICODETEXT) || IsClipboardFormatAvailable(CF_TEXT) ? MF_ENABLED : MF_GRAYED));
+
+        CheckMenuItem (hPopup, IDM_WORDWRAP, MF_BYCOMMAND | ( wordWrap    ? MF_CHECKED : MF_UNCHECKED));
+        EnableMenuItem(hPopup, IDM_GOTO,     MF_BYCOMMAND | (!wordWrap    ? MF_ENABLED : MF_GRAYED));
     }
     void Handle_EN_CHANGE(HWND) { undo.UpdateUndo(edit); }
     void Handle_Undo     (HWND) { undo.Apply(edit); }
@@ -307,4 +312,21 @@ public:
         find.DisplayReplaceDialog(hWnd, edit, &hDlgFind, GetSelectedText(start, end));
     }
     bool DoDialogMessage(MSG* msg) { return hDlgFind && IsDialogMessage(hDlgFind, msg); }
+
+    void Handle_WordWrap(HWND hWnd)
+    {
+        wordWrap = !wordWrap; // toggle the state
+
+        // word wrap is controlled by the style: (WS_HSCROLL | ES_AUTOHSCROLL).
+        // the edit field does not read the new style, but rather the whole edit control must be recreated.
+
+        DWORD style = wordWrap == true ? 0 : (WS_HSCROLL | ES_AUTOHSCROLL);
+        auto text = GetEditFieldText();
+        RECT rc;
+        GetClientRect(hWnd, &rc);
+        DestroyWindow(edit);
+        edit = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD | WS_VISIBLE | WS_VSCROLL |  ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | style, 0, 0, 0, 0, hWnd, reinterpret_cast<HMENU>(IDC_EDITFIELD), GetModuleHandle(nullptr), nullptr);
+        MoveWindow(edit, 0, 0, rc.right-rc.left, rc.bottom-rc.top, TRUE);
+        SetWindowText(edit, text.c_str());
+    }
 };

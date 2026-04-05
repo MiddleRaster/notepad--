@@ -387,6 +387,8 @@ namespace TestAutomation
         {
             SendMessage(edit, EM_SETSEL, (WPARAM)start, (LPARAM)end);
         }
+        bool  IsWindow() const { return ::IsWindow   (edit); }
+        DWORD GetStyle() const { return GetWindowLong(edit, GWL_STYLE); }
     };
 
     class ModalMessageBox
@@ -551,6 +553,7 @@ namespace TestAutomation
             case IDM_FIND     : SelectMenuItemViaKeyboard('E', 'F'); break;
             case IDM_FINDNEXT : SelectMenuItemViaKeyboard('E', 'N'); break;
             case IDM_REPLACE  : SelectMenuItemViaKeyboard('E', 'R'); break;
+            case IDM_WORDWRAP : SelectMenuItemViaKeyboard('O', 'W'); break;
             default:
                 Assert::Fail("mapping from menu id to keyboard selection is not implemented");
                 break;
@@ -559,6 +562,14 @@ namespace TestAutomation
         void ClickMenuItem(const std::wstring& toplevel, const std::wstring& itemName)
         {
             ClickMenuItemViaUIA(hwnd, toplevel.c_str(), itemName.c_str());
+        }
+        bool IsMenuItemChecked(UINT id)
+        {
+            SendMessage(hwnd, WM_INITMENUPOPUP, (WPARAM)subMenu, 0);
+
+            UINT state = GetMenuState(subMenu, id, MF_BYCOMMAND);
+            Assert::AreNotEqual((UINT)(-1), state, "menu item not found");
+            return (state & MF_CHECKED) != 0;
         }
     };
 
@@ -582,8 +593,9 @@ namespace TestAutomation
         HMENU menu;
     public:
         Menu(HWND hwnd, HMENU hmenu) : hwnd(hwnd), menu(hmenu) {}
-        SubMenu GetFileMenu() const { return GetMenu("&File"); }
-        SubMenu GetEditMenu() const { return GetMenu("&Edit"); }
+        SubMenu GetFileMenu  () const { return GetMenu("&File"); }
+        SubMenu GetEditMenu  () const { return GetMenu("&Edit"); }
+        SubMenu GetFormatMenu() const { return GetMenu("F&ormat"); }
     };
 
     struct COM

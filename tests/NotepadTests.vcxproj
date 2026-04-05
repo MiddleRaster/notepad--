@@ -149,6 +149,7 @@
     <ClCompile Include="EditTests.cpp" />
     <ClCompile Include="FileTests.cpp" />
     <ClCompile Include="FindTests.cpp" />
+    <ClCompile Include="GoToAndWordWrapTests.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainTests.cpp" />
     <ClCompile Include="ExitTests.cpp" />
