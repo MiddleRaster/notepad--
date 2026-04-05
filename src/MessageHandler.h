@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 #include <windows.h>
+#undef min
+#undef max
 #include <commdlg.h>
 #include <shellapi.h>
 
@@ -12,6 +14,8 @@
 #include "PrintEngine.h"
 #include "Undo.h"
 #include "Find.h"
+
+
 
 class MessageHandler
 {
@@ -277,12 +281,15 @@ public:
     }
     void Handle_About(HWND hWnd)
     {
-        DialogBox(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, [](HWND hDlg, UINT message, WPARAM wParam, LPARAM /*lParam*/) -> INT_PTR
-            {
-                if (message == WM_INITDIALOG) return (INT_PTR)TRUE;
-                if (message == WM_COMMAND && LOWORD(wParam) == IDOK) return (INT_PTR)!!EndDialog(hDlg, LOWORD(wParam));
-                return (INT_PTR)FALSE;
-            });
+        DialogBox(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, [](HWND hDlg, UINT message, WPARAM wParam, LPARAM) -> INT_PTR
+                {
+                    switch (message) {
+                    case WM_INITDIALOG: return TRUE;
+                    case WM_COMMAND: if (LOWORD(wParam) == IDOK) { EndDialog(hDlg, IDOK    ); return TRUE; } break;
+                    case WM_CLOSE:                                 EndDialog(hDlg, IDCANCEL); return TRUE;
+                    }
+                    return FALSE;
+                });
     }
     void SetRegisteredFindMessage(UINT findMsg) { uFindMsg = findMsg; } // so that we can respond to the FindDialog's messages
 
@@ -312,6 +319,65 @@ public:
         find.DisplayReplaceDialog(hWnd, edit, &hDlgFind, GetSelectedText(start, end));
     }
     bool DoDialogMessage(MSG* msg) { return hDlgFind && IsDialogMessage(hDlgFind, msg); }
+
+    void Handle_GoTo(HWND hWnd)
+    {
+        struct GoToData
+        {
+            int lineNumber = 0;
+            BOOL InitDialog(HWND hDlg, LPARAM lParam)
+            {
+                SetWindowLongPtr(hDlg, GWLP_USERDATA, lParam);
+                return TRUE;
+            }
+            BOOL DoCommand(HWND hDlg, WPARAM wParam)
+            {
+                switch (LOWORD(wParam))
+                {
+                case IDOK:
+                {
+                    HWND hEdit = GetDlgItem(hDlg, IDC_GOTO_EDIT);
+                    int len = GetWindowTextLengthW(hEdit);
+                    std::wstring text(len, L'\0');
+                    GetWindowTextW(hEdit, text.data(), len+1);
+                    if (text.empty())
+                    { // if edit field is empty, don't accept IDOK, but rather beep
+                        MessageBeep(MB_ICONWARNING);
+                        SendMessage(hEdit, EM_SETSEL, 0, -1);
+                        SetFocus(hEdit);
+                    } else {
+                        try { lineNumber = std::stoi(text); }
+                        catch (...) { lineNumber = std::numeric_limits<int>::max(); }
+                        EndDialog(hDlg, IDOK);
+                    }
+                    return TRUE;
+                }
+                case IDCANCEL:
+                    EndDialog(hDlg, IDCANCEL);
+                    return TRUE;
+                }
+                return FALSE;
+            }
+            static INT_PTR CALLBACK DialogProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
+            {
+                GoToData* pThis = reinterpret_cast<GoToData*>(GetWindowLongPtr(hDlg, GWLP_USERDATA));
+                switch (msg)
+                {
+                case WM_INITDIALOG: return pThis->InitDialog(hDlg, lParam);
+                case WM_COMMAND:    return pThis->DoCommand (hDlg, wParam);
+                }
+                return FALSE;
+            }
+        } goToData;
+        if (IDOK == DialogBoxParam(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDD_GOTOBOX), hWnd, GoToData::DialogProc, reinterpret_cast<LPARAM>(&goToData)))
+        {
+            int charIndex = (int)SendMessageW(edit, EM_LINEINDEX, goToData.lineNumber, 0);
+            if (charIndex < 0) // past the end:  EM_LINEINDEX returns -1 if the line doesn't exist
+                charIndex = GetWindowTextLengthW(edit);
+            SendMessageW(edit, EM_SETSEL, charIndex, charIndex);
+            SendMessageW(edit, EM_SCROLLCARET, 0, 0);
+        }
+    }
 
     void Handle_WordWrap(HWND hWnd)
     {

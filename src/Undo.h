@@ -39,7 +39,7 @@ public:
 
         // put caret back
         DWORD len = (DWORD)text.size();
-        SendMessage(edit, EM_SETSEL, min(start, len), min(end, len));
+        SendMessage(edit, EM_SETSEL, std::min(start, len), std::min(end, len));
     }
 };
 

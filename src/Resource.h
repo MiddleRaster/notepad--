@@ -7,6 +7,7 @@
 #define IDC_EDITFIELD           102
 
 #define IDD_ABOUTBOX            103
+#define IDD_GOTOBOX             104
 
 #define IDM_NEW                 111
 #define IDM_OPEN                112
@@ -29,6 +30,8 @@
 
 #define IDM_EXIT                190
 #define IDM_ABOUT               200
+
+#define IDC_GOTO_EDIT           210
 
 #define IDI_NOTEPAD             170
 

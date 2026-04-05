@@ -55,4 +55,102 @@ Test GotoTests[] = {
             main.ExitViaMenu();
         }
     },
+    { std::string("Menu can pop up the 'Go To...' dialogbox"), []()
+        {
+            TestAutomation::MainWindow main;
+
+            main.GetMenu().GetEditMenu().SelectMenuItem(IDM_GOTO);
+            auto goTo = main.FindExistingGoToDialog();
+            goTo.Cancel();
+
+            main.ExitViaMenu();
+        }
+    },
+    { std::string("If nothing is typed into GoTo's edit field, the OK button press is rejected"), []()
+        {
+            TestAutomation::MainWindow main;
+
+            auto edit = main.GetEditField();
+            edit.SetText(L"123");
+            edit.SetCursorPosition(1, 2);
+            edit.ClearDirtyFlag();
+
+            main.GetMenu().GetEditMenu().SelectMenuItem(IDM_GOTO);
+            auto goTo = main.FindExistingGoToDialog();
+            goTo.PressOk();
+
+            Assert::IsTrue(goTo.IsVisible(), "Pressing Ok is rejected when edit field is blank");
+
+            goTo.SetValue(L"0");
+            goTo.PressOk();
+
+            Poll::While(1s, 1ms, [&]() { return goTo.IsVisible(); });
+            Assert::IsFalse(goTo.IsVisible(), "Pressing Ok is accepted when edit field is not blank");
+
+            DWORD s, e;
+            edit.GetCursorPosition(s, e);
+            Assert::AreEqual(0, s, "start position should be 0");
+            Assert::AreEqual(0, e,   "end position should be 0");
+
+            main.ExitViaMenu();
+        }
+    },
+    { std::string("If the user types a huge number into GoTo's edit field, the cursor moves to the last position"), []()
+        {
+            TestAutomation::MainWindow main;
+
+            auto edit = main.GetEditField();
+            edit.SetText(L"123");
+            edit.SetCursorPosition(1, 2);
+            edit.ClearDirtyFlag();
+
+            main.GetMenu().GetEditMenu().SelectMenuItem(IDM_GOTO);
+            auto goTo = main.FindExistingGoToDialog();
+            goTo.SetValue(L"11111111111111111111111");
+            goTo.PressOk();
+
+            Poll::While(1s, 1ms, [&]() { return goTo.IsVisible(); });
+            Assert::IsFalse(goTo.IsVisible(), "Pressing Ok is accepted when edit field is not blank");
+
+            DWORD s, e;
+            edit.GetCursorPosition(s, e);
+            Assert::AreEqual(3, s, "start position should be 3");
+            Assert::AreEqual(3, e,   "end position should be 3");
+
+            main.ExitViaMenu();
+        }
+    },
+    { std::string("GoTo dialog causes cursor to jump to selected line"), []()
+        {
+            TestAutomation::MainWindow main;
+
+            auto edit = main.GetEditField();
+            edit.AppendText(L"0\n");
+            edit.AppendText(L"1\n");
+            edit.AppendText(L"2\n");
+            edit.AppendText(L"3\n");
+            edit.AppendText(L"4\n");
+            edit.AppendText(L"5\n");
+            edit.AppendText(L"6\n");
+            edit.AppendText(L"7\n");
+            edit.AppendText(L"8\n");
+            edit.AppendText(L"9\n");
+            edit.ClearDirtyFlag();
+
+            main.GetMenu().GetEditMenu().SelectMenuItem(IDM_GOTO);
+            auto goTo = main.FindExistingGoToDialog();
+            goTo.SetValue(L"6");
+            goTo.PressOk();
+
+            Poll::While(1s, 1ms, [&]() { return goTo.IsVisible(); });
+            Assert::IsFalse(goTo.IsVisible(), "Pressing Ok is accepted when edit field is not blank");
+
+            DWORD s, e;
+            edit.GetCursorPosition(s, e);
+            Assert::AreEqual(18, s, "start position should be 18");
+            Assert::AreEqual(18, e,   "end position should be 18");
+
+            main.ExitViaMenu();
+        }
+    },
 };

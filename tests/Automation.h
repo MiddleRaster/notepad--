@@ -553,6 +553,7 @@ namespace TestAutomation
             case IDM_FIND     : SelectMenuItemViaKeyboard('E', 'F'); break;
             case IDM_FINDNEXT : SelectMenuItemViaKeyboard('E', 'N'); break;
             case IDM_REPLACE  : SelectMenuItemViaKeyboard('E', 'R'); break;
+            case IDM_GOTO     : SelectMenuItemViaKeyboard('E', 'G'); break;
             case IDM_WORDWRAP : SelectMenuItemViaKeyboard('O', 'W'); break;
             default:
                 Assert::Fail("mapping from menu id to keyboard selection is not implemented");
@@ -570,6 +571,30 @@ namespace TestAutomation
             UINT state = GetMenuState(subMenu, id, MF_BYCOMMAND);
             Assert::AreNotEqual((UINT)(-1), state, "menu item not found");
             return (state & MF_CHECKED) != 0;
+        }
+    };
+
+    struct GoToDialog
+    {
+    private:
+        void ClickButton(int id)
+        {
+            HWND control = GetDlgItem(goTo, id);
+            Assert::AreNotEqual(nullptr, control, "Button not found");
+            SendMessage(control, BM_CLICK, 0, 0);
+        }
+    public:
+        HWND goTo;
+        bool IsVisible() const { return ::IsWindowVisible(goTo); }
+
+        void Cancel () { ClickButton(IDCANCEL); }
+        void PressOk() { ClickButton(IDOK    ); }
+        void SetValue(const std::wstring& number)
+        {
+            HWND edit = GetDlgItem(goTo, IDC_GOTO_EDIT);
+            Assert::AreNotEqual(nullptr, edit, "edit field not found");
+            auto ret = SendMessageW(edit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(number.c_str()));
+            Assert::AreNotEqual(0, ret, "Failed to set number into edit field");
         }
     };
 
@@ -829,6 +854,12 @@ namespace TestAutomation
             HWND unfound = WindowUtils::WaitForWindow(1s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Is::Enabled, WindowFinder::Contains::ChildThatIsStaticIcon); });
             Assert::AreNotEqual(nullptr, unfound, "Find Error MessageBox not found");
             return {unfound};
+        }
+        GoToDialog FindExistingGoToDialog()
+        {
+            HWND goTo = WindowUtils::WaitForWindow(1s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Has::Caption{L"Go To Line"}); });
+            Assert::AreNotEqual(nullptr, goTo, "'Go To Line' dialog box not found");
+            return {goTo};
         }
 
         Menu GetMenu() { return {hwnd, ::GetMenu(hwnd)}; }

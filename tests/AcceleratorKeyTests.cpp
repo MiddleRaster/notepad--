@@ -298,4 +298,21 @@ Test AcceleratorKeyTests[] = {
             main.ExitViaMenu();
         }
     },
+    { std::string("Ctrl-G displays GoToLine dialogbox"), []()
+        {
+            TestAutomation::MainWindow main;
+            auto edit = main.GetEditField();
+            edit.SetText(L"Ctrl-G displays GoToLine dialogbox");
+            edit.ClearDirtyFlag();
+            Poll::While(1s, 1ms, [&edit]() { return edit.IsDirty(); });
+
+            main.EnsureInForeground();
+            main.SendKey('G', TestAutomation::MainWindow::Control);
+
+            auto goTo = main.FindExistingGoToDialog();
+            goTo.Cancel();
+
+            main.ExitViaMenu();
+        }
+    },
 };
