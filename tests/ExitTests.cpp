@@ -13,6 +13,15 @@ namespace TDD20
 }
 
 Test ExitTests[] = {
+    { std::string("Can exit via menu"), []()
+        {
+            TestAutomation::MainWindow main;
+            main.GetMenu().GetFileMenu().SelectMenuItem(IDM_EXIT);
+
+            Poll::While(1s, 1ms, [&]() { return main.IsRunning(); });
+            Assert::IsFalse(main.IsRunning(), "notepad should have shut down by now");
+        }
+    },
     { std::string("Exiting when dirty pops up DialogBox; click 'Don't Save'"), []()
         {
             TestAutomation::MainWindow notepad;

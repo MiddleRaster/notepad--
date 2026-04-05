@@ -40,7 +40,7 @@ BEGIN
         MENUITEM "&Save\tCtrl+S",             IDM_SAVE
         MENUITEM "Save &As...\tCtrl+Shift+S", IDM_SAVEAS
         MENUITEM "&Print...\tCtrl+P",         IDM_PRINT
-        MENUITEM "Exit",                      IDM_EXIT
+        MENUITEM "E&xit",                     IDM_EXIT
     END
     POPUP "&Edit"
     BEGIN
