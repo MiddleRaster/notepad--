@@ -4,6 +4,7 @@ I liked the old Notepad better, so recreating it here.
 
 It's a work-in-progress:
 
+2026-04-04 - Word Wrap, GoTo Line, and tests  
 2026-04-03 - Replace and ReplaceAll and tests  
 2026-04-01 - Find (up/down, whole word, case sensitivity, etc.) and tests  
 2026-03-29 - Edit->Paste/SelectAll defer to edit field's implementation, and tests  
