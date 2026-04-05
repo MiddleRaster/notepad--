@@ -29,7 +29,11 @@ Test WordWrapTests[] = {
 
             main.GetMenu().GetFormatMenu().SelectMenuItem(IDM_WORDWRAP);            // toggle wordwrap
             Poll::While(1s, 1ms, [&]() { return edit.IsWindow(); });                // edit window will be destroyed and re-created
-            Poll::Until(1s, 1ms, [&]() { return main.GetEditField().IsWindow(); }); // wait until new edit window is created
+
+            Poll::Until(1s, 1ms, [&]()  {   // wait until new edit window is created
+                                            try { return main.GetEditField().IsWindow(); } // might throw if not quite created yet
+                                            catch (...) { return false; }
+                                        });
             edit = main.GetEditField(); // get new one
             Assert::AreEqual(0, edit.GetStyle() & (WS_HSCROLL | ES_AUTOHSCROLL), "style should NOT include WS_HSCROLL and ES_AUTOHSCROLL");
 
