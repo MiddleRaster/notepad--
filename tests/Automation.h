@@ -620,9 +620,7 @@ namespace TestAutomation
         {   // get third combo-box's edit field
             HWND ThirdComboBox = WindowFinder::FindDesiredChildWindow(choose, WindowFinder::Has::ClassName{L"ComboBox"}, WindowFinder::Is::Nth{3});
             HWND edit = FindWindowEx(ThirdComboBox, NULL, L"Edit", NULL);
-
-std::wcout << L"value in combobox edit field is " << WindowUtils::GetText(edit) << L"\n";
-
+            // std::wcout << L"value in combobox edit field is " << WindowUtils::GetText(edit) << L"\n";
             return std::stoi(WindowUtils::GetText(edit));
         }
         void SetFontSize(int fontSize)
