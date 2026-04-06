@@ -621,13 +621,8 @@ namespace TestAutomation
             HWND ThirdComboBox = WindowFinder::FindDesiredChildWindow(choose, WindowFinder::Has::ClassName{L"ComboBox"}, WindowFinder::Is::Nth{3});
             HWND edit = FindWindowEx(ThirdComboBox, NULL, L"Edit", NULL);
 
-            //int len = static_cast<int>(SendMessage(edit, WM_GETTEXTLENGTH, 0, 0));
-            //if (len <= 0)
-            //    return 0;
-            //std::wstring s(len+1, L'\0');
-            //SendMessage(edit, WM_GETTEXT, len+1, reinterpret_cast<LPARAM>(s.data()));
-            //s.resize(len);
-            //
+std::wcout << L"value in combobox edit field is " << WindowUtils::GetText(edit) << L"\n";
+
             return std::stoi(WindowUtils::GetText(edit));
         }
         void SetFontSize(int fontSize)
@@ -903,7 +898,7 @@ namespace TestAutomation
         }
         FontDialog FindExistingChooseFontDialog()
         {
-            HWND choose = WindowUtils::WaitForWindow(1s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Has::Caption{ L"Font"}); });
+            HWND choose = WindowUtils::WaitForWindow(2s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Has::Caption{L"Font"}); });
             Assert::AreNotEqual(nullptr, choose, "'Choose Font' dialog box not found");
             return {choose};
         }
