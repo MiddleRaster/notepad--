@@ -10,6 +10,14 @@ namespace WindowFinder
         static bool Visible(HWND hwnd) { return !!IsWindowVisible(hwnd); }
         static bool UnOwned(HWND hwnd) { return GetWindow(hwnd, GW_OWNER) == nullptr; }
         static bool Enabled(HWND hwnd) { return !!IsWindowEnabled(hwnd); }
+        struct Nth
+        {
+            mutable int n;
+            bool operator()(HWND) const
+            {
+                return --n == 0;
+            }
+        };
     };
     namespace Has
     {

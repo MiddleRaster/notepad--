@@ -126,6 +126,16 @@ namespace WindowUtils
         }
         return nullptr;
     }
+    inline std::wstring GetText(HWND hwnd)
+    {
+        int len = static_cast<int>(SendMessage(hwnd, WM_GETTEXTLENGTH, 0, 0));
+        if (len <= 0)
+            return {};
+        std::wstring s(len+1, L'\0');
+        SendMessage(hwnd, WM_GETTEXT, len+1, reinterpret_cast<LPARAM>(s.data()));
+        s.resize(len);
+        return s;
+    }
 }
 namespace Poll
 {
@@ -212,15 +222,7 @@ namespace TestAutomation
         {
             HWND staticText = WindowFinder::FindDesiredChildWindow(hwnd, WindowFinder::Has::ClassName{L"Static"}, WindowFinder::Has::NotStyle{SS_ICON});
             Assert::AreNotEqual(nullptr, staticText, "static text field not found");
-
-            std::wstring text;
-            int len = GetWindowTextLengthW(staticText);
-            if (len > 0) {
-                text.resize(len+1);
-                GetWindowTextW(staticText, text.data(), len+1);
-                text.resize(len);
-            }
-            return text;
+            return WindowUtils::GetText(staticText);
         }
         static void PushOkButton(HWND hwnd)
         {
@@ -357,11 +359,7 @@ namespace TestAutomation
         }
         std::wstring GetText() const
         {
-            const LRESULT length = SendMessageW(edit, WM_GETTEXTLENGTH, 0, 0);
-            std::wstring buffer(static_cast<size_t>(length) + 1, L'\0');
-            SendMessageW(edit, WM_GETTEXT, static_cast<WPARAM>(buffer.size()), reinterpret_cast<LPARAM>(buffer.data()));
-            buffer.resize(static_cast<size_t>(length));
-            return buffer;
+            return WindowUtils::GetText(edit);
         }
         void MarkAsDirty   () { SendMessageW(edit, EM_SETMODIFY, TRUE,  0); }
         void ClearDirtyFlag() { SendMessageW(edit, EM_SETMODIFY, FALSE,  0); }
@@ -389,6 +387,15 @@ namespace TestAutomation
         }
         bool  IsWindow() const { return ::IsWindow   (edit); }
         DWORD GetStyle() const { return GetWindowLong(edit, GWL_STYLE); }
+        void GetFontNameAndSize(std::wstring& newFontName, LONG& newFontSize)
+        {
+            LOGFONT lf  = {0};
+            HFONT hFont = (HFONT)SendMessage(edit, WM_GETFONT, 0, 0);
+            GetObject(hFont, sizeof(lf), &lf);
+
+            newFontName = lf.lfFaceName;
+            newFontSize = lf.lfHeight;
+        }
     };
 
     class ModalMessageBox
@@ -449,15 +456,7 @@ namespace TestAutomation
         std::wstring GetEditFieldText() const
         {
             HWND edit = WindowFinder::FindDesiredChildWindow(findDlg, WindowFinder::Has::ClassName{L"Edit"});
-
-            int len = static_cast<int>(SendMessage(edit, WM_GETTEXTLENGTH, 0, 0));
-            if (len <= 0)
-                return {};
-            
-            std::wstring s(len+1, L'\0');
-            SendMessage(edit, WM_GETTEXT, len + 1, reinterpret_cast<LPARAM>(s.data()));
-            s.resize(len);
-            return s;
+            return WindowUtils::GetText(edit);
         }
         void SetEditFieldText(const std::wstring& criterion)
         {
@@ -606,13 +605,37 @@ namespace TestAutomation
     {
         void ClickButton(int id)
         {
+            Poll::Until(1s, 1ms, [&]() { return GetDlgItem(choose, id) != nullptr; });
             HWND control = GetDlgItem(choose, id);
             Assert::AreNotEqual(nullptr, control, "Button not found");
             SendMessage(control, BM_CLICK, 0, 0);
         }
     public:
         const HWND choose;
-        void Cancel() { ClickButton(IDCANCEL); }
+        void Cancel () { ClickButton(IDCANCEL); }
+        void PressOK() { ClickButton(IDOK    ); }
+        bool IsVisible() const { return !!::IsWindowVisible(choose); }
+
+        int GetFontSize()
+        {   // get third combo-box's edit field
+            HWND ThirdComboBox = WindowFinder::FindDesiredChildWindow(choose, WindowFinder::Has::ClassName{L"ComboBox"}, WindowFinder::Is::Nth{3});
+            HWND edit = FindWindowEx(ThirdComboBox, NULL, L"Edit", NULL);
+
+            //int len = static_cast<int>(SendMessage(edit, WM_GETTEXTLENGTH, 0, 0));
+            //if (len <= 0)
+            //    return 0;
+            //std::wstring s(len+1, L'\0');
+            //SendMessage(edit, WM_GETTEXT, len+1, reinterpret_cast<LPARAM>(s.data()));
+            //s.resize(len);
+            //
+            return std::stoi(WindowUtils::GetText(edit));
+        }
+        void SetFontSize(int fontSize)
+        {
+            HWND ThirdComboBox = WindowFinder::FindDesiredChildWindow(choose, WindowFinder::Has::ClassName{L"ComboBox"}, WindowFinder::Is::Nth{3});
+            HWND edit = FindWindowEx(ThirdComboBox, NULL, L"Edit", NULL);
+            SendMessageW(edit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(std::to_wstring(fontSize).c_str()));
+        }
     };
 
     class Menu
