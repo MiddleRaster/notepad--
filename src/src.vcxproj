@@ -136,6 +136,7 @@
   <ItemGroup>
     <ClInclude Include="FileIO.h" />
     <ClInclude Include="Find.h" />
+    <ClInclude Include="Font.h" />
     <ClInclude Include="MessageHandler.h" />
     <ClInclude Include="MockableFunction.h" />
     <ClInclude Include="PrintEngine.h" />

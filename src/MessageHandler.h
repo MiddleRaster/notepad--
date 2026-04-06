@@ -14,8 +14,7 @@
 #include "PrintEngine.h"
 #include "Undo.h"
 #include "Find.h"
-
-
+#include "Font.h"
 
 class MessageHandler
 {
@@ -58,6 +57,7 @@ class MessageHandler
             return -1;
         }
         SetWindowLongPtrW(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+        Font::InitializeFont_OnlyCallOnNewlyCreatedEditWindows(edit);
 
         // if there's a filename on the command-line, load it up
         LoadCommandlineArgIfAny(hWnd);
@@ -392,7 +392,9 @@ public:
         GetClientRect(hWnd, &rc);
         DestroyWindow(edit);
         edit = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD | WS_VISIBLE | WS_VSCROLL |  ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | style, 0, 0, 0, 0, hWnd, reinterpret_cast<HMENU>(IDC_EDITFIELD), GetModuleHandle(nullptr), nullptr);
-        MoveWindow(edit, 0, 0, rc.right-rc.left, rc.bottom-rc.top, TRUE);
+        Font::InitializeFont_OnlyCallOnNewlyCreatedEditWindows(edit);
+        MoveWindow   (edit, 0, 0, rc.right-rc.left, rc.bottom-rc.top, TRUE);
         SetWindowText(edit, text.c_str());
     }
+    void Handle_Font(HWND hWnd) { Font::DisplayChooseFontDialog(hWnd, edit); }
 };

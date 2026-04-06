@@ -27,6 +27,7 @@
 #define IDM_GOTO                130
 
 #define IDM_WORDWRAP            140
+#define IDM_FONT                141
 
 #define IDM_EXIT                190
 #define IDM_ABOUT               200

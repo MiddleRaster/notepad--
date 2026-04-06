@@ -558,6 +558,7 @@ namespace TestAutomation
             case IDM_GOTO     : SelectMenuItemViaKeyboard('E', 'G'); break;
 
             case IDM_WORDWRAP : SelectMenuItemViaKeyboard('O', 'W'); break;
+            case IDM_FONT     : SelectMenuItemViaKeyboard('O', 'F'); break;
             default:
                 Assert::Fail("mapping from menu id to keyboard selection is not implemented");
                 break;
@@ -599,6 +600,19 @@ namespace TestAutomation
             auto ret = SendMessageW(edit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(number.c_str()));
             Assert::AreNotEqual(0, ret, "Failed to set number into edit field");
         }
+    };
+
+    class FontDialog
+    {
+        void ClickButton(int id)
+        {
+            HWND control = GetDlgItem(choose, id);
+            Assert::AreNotEqual(nullptr, control, "Button not found");
+            SendMessage(control, BM_CLICK, 0, 0);
+        }
+    public:
+        const HWND choose;
+        void Cancel() { ClickButton(IDCANCEL); }
     };
 
     class Menu
@@ -863,6 +877,12 @@ namespace TestAutomation
             HWND goTo = WindowUtils::WaitForWindow(1s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Has::Caption{L"Go To Line"}); });
             Assert::AreNotEqual(nullptr, goTo, "'Go To Line' dialog box not found");
             return {goTo};
+        }
+        FontDialog FindExistingChooseFontDialog()
+        {
+            HWND choose = WindowUtils::WaitForWindow(1s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Has::Caption{ L"Font"}); });
+            Assert::AreNotEqual(nullptr, choose, "'Choose Font' dialog box not found");
+            return {choose};
         }
 
         Menu GetMenu() { return {hwnd, ::GetMenu(hwnd)}; }

@@ -58,12 +58,12 @@ BEGIN
     END
     POPUP "F&ormat"
     BEGIN
-        MENUITEM "&Word Wrap",            IDM_WORDWRAP, CHECKED
-    //  MENUITEM "&Font...",              IDM_FONT
+        MENUITEM "&Word Wrap",                IDM_WORDWRAP, CHECKED
+        MENUITEM "&Font...",                  IDM_FONT
     END
     POPUP "&Help"
     BEGIN
-        MENUITEM "&About ...",           IDM_ABOUT
+        MENUITEM "&About ...",                IDM_ABOUT
     END
 END
 
