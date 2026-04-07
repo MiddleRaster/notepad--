@@ -1,5 +1,8 @@
 ﻿#pragma once
 
+#include <windows.h>
+#include <commctrl.h>
+
 #include "WindowFinder.h"
 #include "..\src\Resource.h"
 #include "UIA.h"
@@ -630,6 +633,17 @@ namespace TestAutomation
             SendMessageW(edit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(std::to_wstring(fontSize).c_str()));
         }
     };
+    struct StatusBar
+    {
+        const HWND statusBar;
+        bool       IsVisible() const { return !!::IsWindowVisible(statusBar); }
+        std::wstring GetText() const
+        {
+            wchar_t buf[256] = {0};
+            SendMessage(statusBar, WM_GETTEXT, 256, (LPARAM)buf);
+            return buf;
+        }
+    };
 
     class Menu
     {
@@ -899,6 +913,12 @@ namespace TestAutomation
             HWND choose = WindowUtils::WaitForWindow(2s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Has::Caption{L"Font"}); });
             Assert::AreNotEqual(nullptr, choose, "'Choose Font' dialog box not found");
             return {choose};
+        }
+        StatusBar GetStatusBar()
+        {
+            HWND statusBar = WindowUtils::WaitForWindow(1s, [&]() { return WindowFinder::FindDesiredChildWindow(hwnd, WindowFinder::Has::ClassName{L"msctls_statusbar32"}); });
+            Assert::AreNotEqual(nullptr, statusBar, "can't find status bar");
+            return {statusBar};
         }
 
         Menu GetMenu() { return {hwnd, ::GetMenu(hwnd)}; }

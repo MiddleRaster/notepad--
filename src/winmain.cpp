@@ -6,6 +6,7 @@
 #include "Resource.h"
 
 #pragma comment(lib, "comdlg32.lib")
+#pragma comment(lib, "comctl32.lib")
 
 #define MAX_LOADSTRING 100
 
@@ -16,10 +17,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     switch (message)
     {
     case WM_CREATE: return MessageHandler::CreateHandlerAndEditWindow(hWnd);
-    case WM_NCDESTROY:     MessageHandler::DestroyHandler(hWnd);                              break;
-    case WM_SIZE:          messageHandler->Handle_WM_SIZE(LOWORD(lParam), HIWORD(lParam));    break;
-    case WM_INITMENUPOPUP: messageHandler->Handle_MenuPopUp(reinterpret_cast<HMENU>(wParam)); break;
-    case WM_ACTIVATE:      messageHandler->Handle_Activate(LOWORD(wParam));                   break;
+    case WM_NCDESTROY:     MessageHandler::DestroyHandler  (hWnd);                                 break;
+    case WM_SIZE:          messageHandler->Handle_Size     (hWnd, LOWORD(lParam), HIWORD(lParam)); break;
+    case WM_INITMENUPOPUP: messageHandler->Handle_MenuPopUp(reinterpret_cast<HMENU>(wParam));      break;
+    case WM_ACTIVATE:      messageHandler->Handle_Activate (LOWORD(wParam));                       break;
+    case WM_TIMER:         messageHandler->Handle_Timer    (hWnd);                                 break;
     case WM_COMMAND:
         switch (LOWORD(wParam))
         {

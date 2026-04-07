@@ -33,6 +33,7 @@
 #define IDM_ABOUT               200
 
 #define IDC_GOTO_EDIT           210
+#define IDC_STATUSBAR           220
 
 #define IDI_NOTEPAD             170
 

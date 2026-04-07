@@ -7,7 +7,7 @@
 #undef min
 #undef max
 #include <commdlg.h>
-#include <shellapi.h>
+#include <commctrl.h>
 
 #include "Resource.h"
 #include "FileIO.h"
@@ -15,6 +15,7 @@
 #include "Undo.h"
 #include "Find.h"
 #include "Font.h"
+#include "StatusBar.h"
 
 class MessageHandler
 {
@@ -43,11 +44,14 @@ class MessageHandler
     HWND hDlgFind = nullptr;
     UINT uFindMsg{};
     Find find;
+    StatusBar statusBar;
 
     bool wordWrap = false; // my default is 'no word wrap' which is the opposite of new Notepad.
 
     int Handle_WM_CREATE(HWND hWnd)
     {
+        statusBar.Create(hWnd);
+
         edit = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD|WS_VISIBLE|WS_VSCROLL|WS_HSCROLL|ES_LEFT|ES_MULTILINE|ES_AUTOVSCROLL|ES_AUTOHSCROLL, 0, 0, 0, 0, hWnd, reinterpret_cast<HMENU>(IDC_EDITFIELD), GetModuleHandle(nullptr), nullptr);
         if (edit == nullptr)
         {
@@ -65,10 +69,14 @@ class MessageHandler
         // set up undo
         undo.UpdateUndo(edit);
 
+        // set a timer to poll for StatusBar text changes
+        SetTimer(hWnd, 1, 100, nullptr);
+
         return 0;
     }
     void Handle_WM_NCDESTROY(HWND hWnd)
     {
+        KillTimer(hWnd, 1);
         SetWindowLongPtrW(hWnd, GWLP_USERDATA, 0);
         delete this;
     }
@@ -115,7 +123,11 @@ public:
             This->Handle_WM_NCDESTROY(hWnd);
     }
 
-    void Handle_WM_SIZE(int width, int height) { MoveWindow(edit, 0, 0, width, height, TRUE); }
+    void Handle_Size(HWND hWnd, int width, int height)
+    {
+        statusBar.ResizeStatusBar(hWnd);
+        MoveWindow(edit, 0, 0, width, height - statusBar.GetHeight(), TRUE);
+    }
     void Handle_Activate(int activateState) { if (activateState != WA_INACTIVE) SetFocus(edit); }
 
     void Handle_FileSave(HWND hWnd)
@@ -250,6 +262,7 @@ public:
         EnableMenuItem(hPopup, IDM_GOTO,     MF_BYCOMMAND | (!wordWrap    ? MF_ENABLED : MF_GRAYED));
     }
     void Handle_EN_CHANGE(HWND) { undo.UpdateUndo(edit); }
+    void Handle_Timer    (HWND) { statusBar.UpdateStatusBar(edit); }
     void Handle_Undo     (HWND) { undo.Apply(edit); }
     void Handle_Copy     (HWND) { SendMessage(edit, WM_COPY,   0,  0); } // let edit field's implementation do the work
     void Handle_Cut      (HWND) { SendMessage(edit, WM_CUT,    0,  0); } // let edit field's implementation do the work
@@ -382,6 +395,7 @@ public:
     void Handle_WordWrap(HWND hWnd)
     {
         wordWrap = !wordWrap; // toggle the state
+        statusBar.OnWordWrap(wordWrap);
 
         // word wrap is controlled by the style: (WS_HSCROLL | ES_AUTOHSCROLL).
         // the edit field does not read the new style, but rather the whole edit control must be recreated.
@@ -392,8 +406,11 @@ public:
         GetClientRect(hWnd, &rc);
         DestroyWindow(edit);
         edit = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD | WS_VISIBLE | WS_VSCROLL |  ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | style, 0, 0, 0, 0, hWnd, reinterpret_cast<HMENU>(IDC_EDITFIELD), GetModuleHandle(nullptr), nullptr);
+
         Font::InitializeFont_OnlyCallOnNewlyCreatedEditWindows(edit);
-        MoveWindow   (edit, 0, 0, rc.right-rc.left, rc.bottom-rc.top, TRUE);
+        statusBar.ResizeStatusBar(hWnd);
+        
+        MoveWindow   (edit, 0, 0, rc.right-rc.left, rc.bottom-rc.top - statusBar.GetHeight(), TRUE);
         SetWindowText(edit, text.c_str());
     }
     void Handle_Font(HWND hWnd) { Font::DisplayChooseFontDialog(hWnd, edit); }

@@ -157,6 +157,7 @@
     <ClCompile Include="modules\tdd20.ixx" />
     <ClCompile Include="PrintTests.cpp" />
     <ClCompile Include="ReplaceTests.cpp" />
+    <ClCompile Include="StatusBarTests.cpp" />
     <ClCompile Include="UIA.cpp" />
   </ItemGroup>
   <ItemGroup>
