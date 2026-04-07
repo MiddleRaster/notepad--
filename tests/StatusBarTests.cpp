@@ -48,7 +48,7 @@ Test StatusBarTests[] = {
             main.GetMenu().GetFormatMenu().SelectMenuItem(IDM_WORDWRAP);
             auto statusBar = main.GetStatusBar();
             Poll::While(1s, 1ms, [&]() { return statusBar.IsVisible(); });
-            Assert::IsFalse(statusBar.IsVisible(), "status bar should be visible by default");
+            Assert::IsFalse(statusBar.IsVisible(), "status bar should be invisible when wordwrap is on");
 
             main.ExitViaMenu();
         }
