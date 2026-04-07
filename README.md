@@ -4,6 +4,7 @@ I liked the old Notepad better, so recreating it here.
 
 It's a work-in-progress:
 
+2026-04-06 - status bar, and tests  
 2026-04-05 - Font selection, and tests  
 2026-04-04 - Word Wrap, GoTo Line, and tests  
 2026-04-03 - Replace and ReplaceAll and tests  
