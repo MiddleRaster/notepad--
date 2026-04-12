@@ -60,7 +60,12 @@ Test FontTests[] = {
             main.GetMenu().GetFormatMenu().SelectMenuItem(IDM_FONT);
             auto font = main.FindExistingChooseFontDialog();
 
-            int fontSize = font.GetFontSize();
+            int fontSize;
+            Poll::Until(1s, 1ms, [&]()  {
+                                            try { fontSize = font.GetFontSize(); }
+                                            catch (...) { return false; }
+                                            return true;
+                                        });
             font.SetFontSize(fontSize+1);
             font.PressOK();
 
