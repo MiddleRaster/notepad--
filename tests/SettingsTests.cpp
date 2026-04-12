@@ -128,8 +128,12 @@ Test SettingsTests[] = {
                 main.GetEditField().GetFontNameAndSize(fontName, fontSize);
                 main.ExitViaMenu();
 
+                HDC  hdc       = ::GetDC(nullptr);
+                int  dpiY      = ::GetDeviceCaps(hdc, LOGPIXELSY);
+                                 ::ReleaseDC(nullptr, hdc);
+                int  pointSize = ::MulDiv(-fontSize, 72, dpiY);
+                Assert::AreEqual(20,         pointSize, "font size should be read from registry");
                 Assert::AreEqual(L"Consolas", fontName, "font name should be read from registry");
-                Assert::AreEqual(-27,         fontSize, "font size should be read from registry");
             }
         }
     },
