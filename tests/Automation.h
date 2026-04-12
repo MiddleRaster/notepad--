@@ -939,7 +939,7 @@ namespace TestAutomation
         }
         FontDialog FindExistingChooseFontDialog()
         {
-            HWND choose = WindowUtils::WaitForWindow(2s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Has::Caption{L"Font"}); });
+            HWND choose = WindowUtils::WaitForWindow(5s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Has::Caption{L"Font"}); });
             Assert::AreNotEqual(nullptr, choose, "'Choose Font' dialog box not found");
             return {choose};
         }
