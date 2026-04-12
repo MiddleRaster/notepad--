@@ -140,6 +140,7 @@
     <ClInclude Include="MessageHandler.h" />
     <ClInclude Include="MockableFunction.h" />
     <ClInclude Include="PrintEngine.h" />
+    <ClInclude Include="Settings.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="StatusBar.h" />
     <ClInclude Include="Undo.h" />

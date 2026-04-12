@@ -620,10 +620,9 @@ namespace TestAutomation
         bool IsVisible() const { return !!::IsWindowVisible(choose); }
 
         int GetFontSize()
-        {   // get third combo-box's edit field
+        {
             HWND ThirdComboBox = WindowFinder::FindDesiredChildWindow(choose, WindowFinder::Has::ClassName{L"ComboBox"}, WindowFinder::Is::Nth{3});
             HWND edit = FindWindowEx(ThirdComboBox, NULL, L"Edit", NULL);
-            // std::wcout << L"value in combobox edit field is " << WindowUtils::GetText(edit) << L"\n";
             return std::stoi(WindowUtils::GetText(edit));
         }
         void SetFontSize(int fontSize)
@@ -631,6 +630,35 @@ namespace TestAutomation
             HWND ThirdComboBox = WindowFinder::FindDesiredChildWindow(choose, WindowFinder::Has::ClassName{L"ComboBox"}, WindowFinder::Is::Nth{3});
             HWND edit = FindWindowEx(ThirdComboBox, NULL, L"Edit", NULL);
             SendMessageW(edit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(std::to_wstring(fontSize).c_str()));
+        }
+        std::wstring GetFontName()
+        {
+            HWND FirstComboBox = WindowFinder::FindDesiredChildWindow(choose, WindowFinder::Has::ClassName{L"ComboBox"}, WindowFinder::Is::Nth{1});
+
+            LRESULT idx = ::SendMessageW(FirstComboBox, CB_GETCURSEL, 0, 0);
+            if (idx == CB_ERR)
+                return {};
+            LRESULT len = ::SendMessageW(FirstComboBox, CB_GETLBTEXTLEN, idx, 0);
+            if (len == CB_ERR)
+                return {};
+
+            std::wstring name(len, L'\0');
+            ::SendMessageW(FirstComboBox, CB_GETLBTEXT, idx, reinterpret_cast<LPARAM>(name.data()));
+            return name;
+        }
+        void SetFont(const std::wstring& fontName)
+        {
+            HWND FirstComboBox = WindowFinder::FindDesiredChildWindow(choose, WindowFinder::Has::ClassName{L"ComboBox"}, WindowFinder::Is::Nth{1});
+
+            // Select by string in the combobox itself — don't touch the Edit child
+            LRESULT idx = ::SendMessageW(FirstComboBox, CB_FINDSTRINGEXACT, static_cast<WPARAM>(-1), reinterpret_cast<LPARAM>(fontName.c_str()));
+            if (idx != CB_ERR)
+            {
+                ::SendMessageW(FirstComboBox, CB_SETCURSEL, idx, 0);
+
+                // Notify the dialog that the selection changed
+                ::SendMessageW(GetParent(FirstComboBox), WM_COMMAND, MAKEWPARAM(GetDlgCtrlID(FirstComboBox), CBN_SELCHANGE), reinterpret_cast<LPARAM>(FirstComboBox));
+            }
         }
     };
     struct StatusBar
@@ -729,8 +757,8 @@ namespace TestAutomation
         }
 
         ProcessGuard proc;
-        HWND hwnd{};
     public:
+        HWND hwnd{};
         MainWindow() : proc([&](PROCESS_INFORMATION& pi) { return LaunchNotepadAndWait(pi); })
         {
             ValidateProcAndAssignHWND();
@@ -740,6 +768,7 @@ namespace TestAutomation
             if (std::filesystem::exists(filePath))
                 ValidateProcAndAssignHWND();
         }
+        void MoveWindow(int X, int Y, int nWidth, int nHeight) { ::MoveWindow(hwnd, X, Y, nWidth, nHeight, TRUE); }
         ModalMessageBox GetModalMessageBox()
         {
             HWND msg = WindowUtils::WaitForWindow(1s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}); });

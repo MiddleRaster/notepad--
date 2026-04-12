@@ -1,7 +1,9 @@
-﻿import std;
+﻿#include <windows.h>
+#include "..\src\Settings.h"
+
+import std;
 import tdd20;
 
-#include <windows.h>
 #include "Automation.h"
 
 using namespace std::chrono_literals;
@@ -66,11 +68,14 @@ Test FontTests[] = {
             std::wstring newFontName;
             LONG         newFontSize{};
             edit.GetFontNameAndSize(newFontName, newFontSize);
+            main.ExitViaMenu();
+
+            Poll::While(1s, 1ms, [&]() { return Settings::Registry::GetFontHeight() == fontSize  ; }); // wait for Notepad-- to start writing its settings
+            Poll::While(1s, 1ms, [&]() { return Settings::Registry::GetFontHeight() == fontSize+1; }); // wiat for Notepad-- to finish writing its settings
+            Settings::Registry::SetFontHeight(fontSize); // change it back so we don't keep growing the text height
 
             Assert::AreEqual(oldFontName,   newFontName, "font names should not have changed");
             Assert::AreEqual(oldFontSize-1, newFontSize, "font size should have changed"); // oldFontSize was -16. After the change, it's -17 (rounded, close enough).
-
-            main.ExitViaMenu();
         }
     },
 };

@@ -21,6 +21,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_SIZE:          messageHandler->Handle_Size     (hWnd, LOWORD(lParam), HIWORD(lParam)); break;
     case WM_INITMENUPOPUP: messageHandler->Handle_MenuPopUp(reinterpret_cast<HMENU>(wParam));      break;
     case WM_ACTIVATE:      messageHandler->Handle_Activate (LOWORD(wParam));                       break;
+    case WM_CLOSE:         messageHandler->Handle_Close    (hWnd);                                 break;
     case WM_TIMER:         messageHandler->Handle_Timer    (hWnd);                                 break;
     case WM_COMMAND:
         switch (LOWORD(wParam))
@@ -83,7 +84,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE /*hPrevInstan
     HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
     if (!hWnd)
         return -1;
-    ShowWindow  (hWnd, nCmdShow);
+    ShowWindow  (hWnd, Settings::Registry::IsMaximized() ? SW_SHOWMAXIMIZED : nCmdShow);
     UpdateWindow(hWnd);
 
     // for modeless Find dialog

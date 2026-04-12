@@ -16,6 +16,7 @@
 #include "Find.h"
 #include "Font.h"
 #include "StatusBar.h"
+#include "Settings.h"
 
 class MessageHandler
 {
@@ -72,10 +73,14 @@ class MessageHandler
         // set a timer to poll for StatusBar text changes
         SetTimer(hWnd, 1, 100, nullptr);
 
+        Settings::FontAndPlacement::Load(hWnd, edit);
+
         return 0;
     }
     void Handle_WM_NCDESTROY(HWND hWnd)
     {
+        // TODO:  BUGBUG:  leaking an HFONT
+
         KillTimer(hWnd, 1);
         SetWindowLongPtrW(hWnd, GWLP_USERDATA, 0);
         delete this;
@@ -129,6 +134,24 @@ public:
         MoveWindow(edit, 0, 0, width, height - statusBar.GetHeight(), TRUE);
     }
     void Handle_Activate(int activateState) { if (activateState != WA_INACTIVE) SetFocus(edit); }
+    void Handle_Close(HWND hWnd)
+    {
+        if (IsDirty())
+        {
+            switch (GetWantToSaveChangedMessageBoxChoice(hWnd))
+            {
+            case IDYES: Handle_FileSaveAs(hWnd); break;
+            case IDNO:                           break;
+            case IDCANCEL:   // fall through
+            default: return; // abort close
+            }
+        }
+
+        // save settings: window placement and font info
+        Settings::FontAndPlacement::Save(hWnd, edit);
+
+        ::DestroyWindow(hWnd);
+    }
 
     void Handle_FileSave(HWND hWnd)
     {
@@ -181,30 +204,7 @@ public:
         EndDoc(pd.hDC);
         DeleteDC(pd.hDC);
     }
-
-    void Handle_Exit(HWND hWnd)
-    {
-        if (!IsDirty())
-        {
-            DestroyWindow(hWnd);
-            return;
-        }
-
-        switch (GetWantToSaveChangedMessageBoxChoice(hWnd))
-        {
-        case IDYES:
-            Handle_FileSaveAs(hWnd);
-            DestroyWindow(hWnd);
-            break;
-        case IDNO:
-            DestroyWindow(hWnd);
-            break;
-        case IDCANCEL:
-        default:
-            break;
-        }
-    }
-
+    void Handle_Exit(HWND hWnd) { ::SendMessage(hWnd, WM_CLOSE, 0, 0); }
     void Handle_FileOpen(HWND hWnd)
     {
         if (IsDirty())
@@ -394,16 +394,20 @@ public:
 
     void Handle_WordWrap(HWND hWnd)
     {
-        wordWrap = !wordWrap; // toggle the state
-        statusBar.OnWordWrap(wordWrap);
-
         // word wrap is controlled by the style: (WS_HSCROLL | ES_AUTOHSCROLL).
         // the edit field does not read the new style, but rather the whole edit control must be recreated.
 
+        wordWrap = !wordWrap; // toggle the state
+        statusBar.OnWordWrap(wordWrap);
         DWORD style = wordWrap == true ? 0 : (WS_HSCROLL | ES_AUTOHSCROLL);
-        auto text = GetEditFieldText();
+
+        // save current text, placement and font
+        auto text   = GetEditFieldText();
+        HFONT font  = (HFONT)SendMessage(edit, WM_GETFONT, 0, 0);
         RECT rc;
         GetClientRect(hWnd, &rc);
+
+        // re-create edit window
         DestroyWindow(edit);
         edit = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD | WS_VISIBLE | WS_VSCROLL |  ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | style, 0, 0, 0, 0, hWnd, reinterpret_cast<HMENU>(IDC_EDITFIELD), GetModuleHandle(nullptr), nullptr);
 
@@ -412,6 +416,7 @@ public:
         
         MoveWindow   (edit, 0, 0, rc.right-rc.left, rc.bottom-rc.top - statusBar.GetHeight(), TRUE);
         SetWindowText(edit, text.c_str());
+        SendMessage(edit, WM_SETFONT, reinterpret_cast<WPARAM>(font), TRUE);
     }
     void Handle_Font(HWND hWnd) { Font::DisplayChooseFontDialog(hWnd, edit); }
 };
