@@ -3,7 +3,9 @@
 
 #pragma once
 #include <windows.h>
+#undef min
 #include <string>
+#include <algorithm>
 
 struct FileIO
 {
@@ -91,6 +93,27 @@ struct FileIO
         }
         else
             MessageBoxW(hWnd, L"Failed to save file.", L"Notepad--", MB_OK | MB_ICONERROR);
+    }
+
+    static void FileSaveAs(HWND hWnd, HWND edit, std::filesystem::path& FilePath)
+    {
+        wchar_t filePath[MAX_PATH];
+
+        auto src = FilePath.native();
+        size_t toCopy = std::min(src.size(), static_cast<size_t>(MAX_PATH-1));
+        src.copy(filePath, toCopy);
+        filePath[toCopy] = L'\0';
+
+        OPENFILENAMEW ofn{};
+        ofn.lStructSize  = sizeof(ofn);
+        ofn.hwndOwner    = hWnd;
+        ofn.lpstrFile    = filePath;
+        ofn.nMaxFile     = MAX_PATH;
+        ofn.lpstrFilter  = L"Text Files (*.txt)\0*.txt\0All Files (*.*)\0*.*\0";
+        ofn.nFilterIndex = 1;
+        ofn.Flags = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST;
+        if (GetSaveFileNameW(&ofn))
+            FileIO::SaveFile(hWnd, edit, filePath, FilePath);
     }
 };
 

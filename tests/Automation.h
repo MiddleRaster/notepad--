@@ -339,6 +339,12 @@ namespace TestAutomation
             SendMessageW(cancelButton, BM_CLICK, 0, 0);
             Poll::While(1s, 1ms, [this]() { return IsWindow(saveAs); });
         }
+        std::wstring GetEditFieldText() const
+        {
+            HWND dlgEdit = WindowUtils::WaitForWindow(1s, [&]() { return FindSaveAsEdit(saveAs); });
+            Assert::AreNotEqual(nullptr, dlgEdit, "Save As edit control not found");
+            return WindowUtils::GetText(dlgEdit);
+        }
     };
 
     class EditField

@@ -174,17 +174,7 @@ public:
 
     void Handle_FileSaveAs(HWND hWnd)
     {
-        wchar_t filePath[MAX_PATH] = L"";
-        OPENFILENAMEW ofn{};
-        ofn.lStructSize  = sizeof(ofn);
-        ofn.hwndOwner    = hWnd;
-        ofn.lpstrFile    = filePath;
-        ofn.nMaxFile     = MAX_PATH;
-        ofn.lpstrFilter  = L"Text Files (*.txt)\0*.txt\0All Files (*.*)\0*.*\0";
-        ofn.nFilterIndex = 1;
-        ofn.Flags        = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST;
-        if (GetSaveFileNameW(&ofn))
-            FileIO::SaveFile(hWnd, edit, filePath, FilePath);
+        FileIO::FileSaveAs(hWnd, edit, FilePath);
     }
 
     void Handle_Print(HWND hWnd)
@@ -237,6 +227,7 @@ public:
         ofn.Flags        = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
         if (GetOpenFileNameW(&ofn))
         {
+            FilePath = filePath;
             if (!FileIO::LoadFileToEdit(hWnd, edit, filePath))
                 MessageBoxW(hWnd, L"Failed to open file.", L"Notepad--", MB_OK | MB_ICONERROR);
         }
