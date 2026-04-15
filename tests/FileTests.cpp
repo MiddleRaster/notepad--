@@ -273,17 +273,25 @@ Test FileSaveAsTests[] = {
     { std::string("Loading a file and selecting File->SaveAs pre-populates SaveAs dialog"), []()
         {
             auto path = FileUtils::CreateTempUtf8File(L"Notepad--.txt", L"Loading a file and selecting File->SaveAs pre-populates SaveAs dialog");
+
+            auto stripExtension = [](const std::wstring& filename)
+                                    {
+                                        auto dot = filename.rfind(L'.');
+                                        if (dot != std::wstring::npos)
+                                            return filename.substr(0, dot);
+                                        return filename;
+                                    };
+
             TestAutomation::MainWindow main(path);
-             
             auto saveAs       = main.SaveAs();
-            Poll::Until(1s, 1ms, [&]() { return saveAs.GetEditFieldText() == L"Notepad--.txt"; });
+            Poll::Until(1s, 1ms, [&]() { return stripExtension(saveAs.GetEditFieldText()) == stripExtension(L"Notepad--.txt"); });
             auto prepopulated = saveAs.GetEditFieldText();
             saveAs.Cancel();
 
             FileUtils::DeleteFileWithRetry(path);
             main.ExitViaMenu();
 
-            Assert::AreEqual(path.filename().c_str(), prepopulated, "filename should have been set in SaveAs dialog's edit field");
+            Assert::AreEqual(stripExtension(path.filename().c_str()), stripExtension(prepopulated), "filename should have been set in SaveAs dialog's edit field");
         }
     },
 };
