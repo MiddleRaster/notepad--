@@ -121,7 +121,7 @@ Test SettingsTests[] = {
             }
             {
                 TestAutomation::MainWindow main;
-                main.GetMenu().GetFormatMenu().SelectMenuItem(IDM_FONT);
+            //  main.GetMenu().GetFormatMenu().SelectMenuItem(IDM_FONT);
 
                 HDC  hdc = ::GetDC(nullptr);
                 int  dpiY = ::GetDeviceCaps(hdc, LOGPIXELSY);
@@ -132,11 +132,13 @@ Test SettingsTests[] = {
                 Poll::Until(1s, 1ms, [&]()  {
                                                 main.GetEditField().GetFontNameAndSize(fontName, fontSize);
                                                 int  pointSize = ::MulDiv(-fontSize, 72, dpiY);
+std::wcout << L"dpiY=" << dpiY << L"  fontSize=" << fontSize << L"  pointSize=" << ::MulDiv(-fontSize, 72, dpiY) << L"\n";
                                                 return pointSize == 20;
                                             });
                 main.ExitViaMenu();
 
                 int  pointSize = ::MulDiv(-fontSize, 72, dpiY);
+std::wcout << L"dpiY=" << dpiY << L"  fontSize=" << fontSize << L"  pointSize=" << ::MulDiv(-fontSize, 72, dpiY) << L"\n";
                 Assert::AreEqual(20,         pointSize, "font size should be read from registry");
                 Assert::AreEqual(L"Consolas", fontName, "font name should be read from registry");
             }
