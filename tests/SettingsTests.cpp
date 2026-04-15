@@ -123,14 +123,19 @@ Test SettingsTests[] = {
                 TestAutomation::MainWindow main;
                 main.GetMenu().GetFormatMenu().SelectMenuItem(IDM_FONT);
 
+                HDC  hdc = ::GetDC(nullptr);
+                int  dpiY = ::GetDeviceCaps(hdc, LOGPIXELSY);
+                ::ReleaseDC(nullptr, hdc);
+
                 std::wstring fontName;
                 LONG fontSize;
-                main.GetEditField().GetFontNameAndSize(fontName, fontSize);
+                Poll::Until(1s, 1ms, [&]()  {
+                                                main.GetEditField().GetFontNameAndSize(fontName, fontSize);
+                                                int  pointSize = ::MulDiv(-fontSize, 72, dpiY);
+                                                return pointSize == 20;
+                                            });
                 main.ExitViaMenu();
 
-                HDC  hdc       = ::GetDC(nullptr);
-                int  dpiY      = ::GetDeviceCaps(hdc, LOGPIXELSY);
-                                 ::ReleaseDC(nullptr, hdc);
                 int  pointSize = ::MulDiv(-fontSize, 72, dpiY);
                 Assert::AreEqual(20,         pointSize, "font size should be read from registry");
                 Assert::AreEqual(L"Consolas", fontName, "font name should be read from registry");

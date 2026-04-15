@@ -276,6 +276,7 @@ Test FileSaveAsTests[] = {
             TestAutomation::MainWindow main(path);
              
             auto saveAs       = main.SaveAs();
+            Poll::Until(1s, 1ms, [&]() { return saveAs.GetEditFieldText() == L"Notepad--.txt"; });
             auto prepopulated = saveAs.GetEditFieldText();
             saveAs.Cancel();
 
