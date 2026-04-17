@@ -334,6 +334,12 @@ Test FileSaveAsTests[] = {
                 std::cout << "Just before first SetEncoding call" << std::endl;
                 saveAs.SetEncoding(L"UTF-8 no BOM"      );
 
+                std::wcout << L"[Test] file #" << 1
+                    << L" path: [" << pathUTF8noBOM.c_str() << L"]"
+                    << L" encoding: [" << L"UTF-8 no BOM" << L"]"
+                    << std::endl;
+
+
                 std::cout << "Just before first SaveFile call" << std::endl;
                 saveAs.SaveFile(pathUTF8noBOM  .c_str());
             }
@@ -344,6 +350,13 @@ Test FileSaveAsTests[] = {
                 auto saveAs = main.SaveAs();
                 std::cout << "Just before second SetEncoding call" << std::endl;
                 saveAs.SetEncoding(L"UTF-8 with BOM"    );
+
+                std::wcout << L"[Test] file #" << 2
+                    << L" path: [" << pathUTF8withBOM.c_str() << L"]"
+                    << L" encoding: [" << L"UTF-8 with BOM" << L"]"
+                    << std::endl;
+
+
                 std::cout << "Just before second SaveFile call" << std::endl;
                 saveAs.SaveFile(pathUTF8withBOM.c_str());
             }

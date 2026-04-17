@@ -327,6 +327,11 @@ namespace TestAutomation
             std::cout << "Just before Assert::IsTrue" << std::endl;
             Assert::IsTrue(SendMessageW(dlgEdit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(fileName.c_str())) != 0, "Failed to set Save As filename");
 
+
+            std::wcout << L"[SaveFile] dlgEdit text now: [" << GetEditFieldText() << L"]" << std::endl;
+
+
+
             std::cout << "Just before find okButton" << std::endl;
             HWND okButton = GetDlgItem(saveAs, IDOK);
 
