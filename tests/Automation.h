@@ -331,9 +331,8 @@ namespace TestAutomation
             if (std::filesystem::exists(fileName) == false)
             {
                 // Did notepad-- pop up a messagebox, blocking while showing the error from IFileSaveDialog?
-                DWORD pid=0;
-                GetWindowThreadProcessId(saveAs, &pid);
-                HWND msg = WindowUtils::WaitForWindow(1s, [pid]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}); });
+                HWND hwnd = GetParent(saveAs);
+                HWND msg = WindowUtils::WaitForWindow(1s, [&]() { return WindowFinder::FindDesiredChildWindow(hwnd, WindowFinder::Has::ClassName{L"#32770"}); });
                 if (msg != nullptr)
                 {
                     auto mbText = MessageBoxUtils::GetStaticText(msg);

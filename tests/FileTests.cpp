@@ -306,7 +306,9 @@ Test FileSaveAsTests[] = {
             };
 
             TestAutomation::MainWindow main;
-            main.GetEditField().SetText(L"This is some text");
+            auto edit = main.GetEditField();
+            edit.SetText(L"This is some text");
+            edit.ClearDirtyFlag();
 
             auto pathUTF8noBOM   = FileUtils::GetTempFilename(L"UTF8noBOM.txt");
 #if _DEBUG
