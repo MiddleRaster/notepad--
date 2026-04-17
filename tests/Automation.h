@@ -339,11 +339,26 @@ namespace TestAutomation
             std::cout << "Just before Poll::While(IsWindow)" << std::endl;
             Poll::While(1s, 1ms, [this]() { return IsWindow(saveAs); });
 
-            std::cout << "Just before Poll::Until(filesystem::exists)" << std::endl;
-            Poll::Until(1s, 1ms, [&fileName]() { return std::filesystem::exists(fileName); });
+            //std::cout << "Just before Poll::Until(filesystem::exists)" << std::endl;
+            //Poll::Until(1s, 1ms, [&fileName]() { return std::filesystem::exists(fileName); });
 
-            std::cout << "Just before Assert::IsTrue(filesystem::exists)" << std::endl;
-            Assert::IsTrue(std::filesystem::exists(fileName), "Save As did not create the file");
+            //std::cout << "Just before Assert::IsTrue(filesystem::exists)" << std::endl;
+            //Assert::IsTrue(std::filesystem::exists(fileName), "Save As did not create the file");
+
+            std::cout << "[POLL-START]" << std::endl;
+            Poll::Until(1s, 1ms, [&] {
+                auto e = std::filesystem::exists(fileName);
+                std::cout << "  exists() in poll: " << e << std::endl;
+                return e;
+                });
+            std::cout << "[POLL-END]" << std::endl;
+
+            std::cout << "[ASSERT-BEFORE]" << std::endl;
+            auto e2 = std::filesystem::exists(fileName);
+            std::cout << "  exists() before assert: " << e2 << std::endl;
+            Assert::IsTrue(e2);
+            std::cout << "[ASSERT-AFTER]" << std::endl;
+
 
             std::cout << "About to exit SaveFile method" << std::endl;
         }
