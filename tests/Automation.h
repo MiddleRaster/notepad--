@@ -318,18 +318,34 @@ namespace TestAutomation
         SaveAsDialog(HWND hwnd) : saveAs(hwnd) {}
         void SaveFile(const std::filesystem::path& fileName)
         {
+            std::cout << "Just before find dlgEdit in SaveFile" << std::endl;
             HWND dlgEdit = WindowUtils::WaitForWindow(1s, [&]() { return FindSaveAsEdit(saveAs); });
+
+            std::cout << "Just before Assert::AreNotEqual(nullptr, dlgEdit)" << std::endl;
             Assert::AreNotEqual(nullptr, dlgEdit, "Save As edit control not found");
+
+            std::cout << "Just before Assert::IsTrue" << std::endl;
             Assert::IsTrue(SendMessageW(dlgEdit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(fileName.c_str())) != 0, "Failed to set Save As filename");
 
+            std::cout << "Just before find okButton" << std::endl;
             HWND okButton = GetDlgItem(saveAs, IDOK);
+
+            std::cout << "Just before Assert::AreNotEqual(nullptr, okButton)" << std::endl;
             Assert::AreNotEqual(nullptr, okButton, "Save As OK button not found");
             
+            std::cout << "Just before SendMessageW(okButton, MB_CLICK)" << std::endl;
             SendMessageW(okButton, BM_CLICK, 0, 0);
+
+            std::cout << "Just before Poll::While(IsWindow)" << std::endl;
             Poll::While(1s, 1ms, [this]() { return IsWindow(saveAs); });
 
+            std::cout << "Just before Poll::Until(filesystem::exists)" << std::endl;
             Poll::Until(1s, 1ms, [&fileName]() { return std::filesystem::exists(fileName); });
+
+            std::cout << "Just before Assert::IsTrue(filesystem::exists)" << std::endl;
             Assert::IsTrue(std::filesystem::exists(fileName), "Save As did not create the file");
+
+            std::cout << "About to exit SaveFile method" << std::endl;
         }
         void Cancel()
         {
