@@ -339,10 +339,45 @@ Test FileSaveAsTests[] = {
             }
             std::cout << "Just afer first saveAs.SaveFile call" << std::endl;
 
-            { auto saveAs = main.SaveAs(); saveAs.SetEncoding(L"UTF-8 with BOM"    ); saveAs.SaveFile(pathUTF8withBOM.c_str()); }
-            { auto saveAs = main.SaveAs(); saveAs.SetEncoding(L"ANSI"              ); saveAs.SaveFile(pathANSI       .c_str()); }
-            { auto saveAs = main.SaveAs(); saveAs.SetEncoding(L"Unicode"           ); saveAs.SaveFile(pathUTF16      .c_str()); }
-            { auto saveAs = main.SaveAs(); saveAs.SetEncoding(L"Unicode big endian"); saveAs.SaveFile(pathUTF16BE    .c_str()); }
+            { 
+                std::cout << "Just before second saveAs call" << std::endl;
+                auto saveAs = main.SaveAs();
+                std::cout << "Just before second SetEncoding call" << std::endl;
+                saveAs.SetEncoding(L"UTF-8 with BOM"    );
+                std::cout << "Just before second SaveFile call" << std::endl;
+                saveAs.SaveFile(pathUTF8withBOM.c_str());
+            }
+            std::cout << "Just afer second saveAs.SaveFile call" << std::endl;
+
+            {
+                std::cout << "Just before third saveAs call" << std::endl;
+                auto saveAs = main.SaveAs();
+                std::cout << "Just before third SetEncoding call" << std::endl;
+                saveAs.SetEncoding(L"ANSI"              );
+                std::cout << "Just before third SaveFile call" << std::endl;
+                saveAs.SaveFile(pathANSI       .c_str());
+            }
+            std::cout << "Just afer third saveAs.SaveFile call" << std::endl;
+
+            { 
+                std::cout << "Just before fourth saveAs call" << std::endl;
+                auto saveAs = main.SaveAs();
+                std::cout << "Just before fourth SetEncoding call" << std::endl;
+                saveAs.SetEncoding(L"Unicode"           );
+                std::cout << "Just before fourth SaveFile call" << std::endl;
+                saveAs.SaveFile(pathUTF16      .c_str());
+            }
+            std::cout << "Just afer fourth saveAs.SaveFile call" << std::endl;
+
+            {
+                std::cout << "Just before fifth saveAs call" << std::endl;
+                auto saveAs = main.SaveAs();
+                std::cout << "Just before fifth SetEncoding call" << std::endl;
+                saveAs.SetEncoding(L"Unicode big endian");
+                std::cout << "Just before fifth SaveFile call" << std::endl;
+                saveAs.SaveFile(pathUTF16BE    .c_str());
+            }
+            std::cout << "Just afer fifth saveAs.SaveFile call" << std::endl;
 
             std::cout << "Just before ExitViaMenu" << std::endl;
             main.ExitViaMenu();
