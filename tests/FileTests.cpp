@@ -294,4 +294,80 @@ Test FileSaveAsTests[] = {
             Assert::AreEqual(stripExtension(path.filename().c_str()), stripExtension(prepopulated), "filename should have been set in SaveAs dialog's edit field");
         }
     },
+    { std::string("Write 5 differently encoded txt files and verify them by reading them back in"), []()
+        {
+            struct FileDeleter
+            {
+                const std::filesystem::path path;
+                FileDeleter(const std::filesystem::path& path) : path(path) {}
+               ~FileDeleter() { FileUtils::DeleteFileWithRetry(path); }
+            };
+
+            TestAutomation::MainWindow main;
+            main.GetEditField().SetText(L"This is some text");
+
+            auto pathUTF8noBOM   = FileUtils::GetTempFilename(L"UTF8noBOM.txt");
+            auto pathUTF8withBOM = FileUtils::GetTempFilename(L"UTF8withBOM.txt");
+            auto pathANSI        = FileUtils::GetTempFilename(L"ANSI.txt");
+            auto pathUTF16       = FileUtils::GetTempFilename(L"UTF16.txt");
+            auto pathUTF16BE     = FileUtils::GetTempFilename(L"UTF16BE.txt");
+
+            FileDeleter fd0(pathUTF8noBOM);
+            FileDeleter fd1(pathUTF8withBOM);
+            FileDeleter fd2(pathANSI);
+            FileDeleter fd3(pathUTF16);
+            FileDeleter fd4(pathUTF16BE);
+
+            { auto saveAs = main.SaveAs(); saveAs.SetEncoding(L"UTF-8 no BOM"      ); saveAs.SaveFile(pathUTF8noBOM  .c_str()); }
+            { auto saveAs = main.SaveAs(); saveAs.SetEncoding(L"UTF-8 with BOM"    ); saveAs.SaveFile(pathUTF8withBOM.c_str()); }
+            { auto saveAs = main.SaveAs(); saveAs.SetEncoding(L"ANSI"              ); saveAs.SaveFile(pathANSI       .c_str()); }
+            { auto saveAs = main.SaveAs(); saveAs.SetEncoding(L"Unicode"           ); saveAs.SaveFile(pathUTF16      .c_str()); }
+            { auto saveAs = main.SaveAs(); saveAs.SetEncoding(L"Unicode big endian"); saveAs.SaveFile(pathUTF16BE    .c_str()); }
+
+            main.ExitViaMenu();
+
+            struct Read
+            {
+                static std::wstring BOM(const std::filesystem::path& filename)
+                {   // read the first 3 bytes:
+                    std::ifstream in(filename, std::ios::binary);
+
+                    std::array<unsigned char, 3> b;
+                    in.read(reinterpret_cast<char*>(b.data()), 3);
+
+                    if (b[0] == 0xEF)
+                    if (b[1] == 0xBB)
+                    if (b[2] == 0xBF)
+                        return std::format(L"{:02X},{:02X},{:02X}", b[0], b[1], b[2]); // UTF-8 with BOM
+
+                    if (b[0] == 0xFF)
+                    if (b[1] == 0xFE)
+                        return std::format(L"{:02X},{:02X}",        b[0], b[1]); // UTF-16
+
+                    if (b[0] == 0xFE)
+                    if (b[1] == 0xFF)
+                        return std::format(L"{:02X},{:02X}",        b[0], b[1]); // UTF-16 be
+
+                    return L"";                                                  // ANSI, UTF-8 no BOM
+                }
+                static std::wstring File(const std::filesystem::path& filename)
+                {
+                    TestAutomation::MainWindow main(filename);
+                    return main.GetEditField().GetText();
+                }
+            };
+
+            Assert::AreEqual(std::format(L""                                      ), Read::BOM(pathUTF8noBOM),   "UTF-8 no BOM is wrong");
+            Assert::AreEqual(std::format(L"{:02X},{:02X},{:02X}", 0xEF, 0xBB, 0xBF), Read::BOM(pathUTF8withBOM), "UTF-8 with BOM is wrong");
+            Assert::AreEqual(std::format(L"{:02X},{:02X}",        0xFF, 0xFE      ), Read::BOM(pathUTF16),       "UTF-16 BOM is wrong");
+            Assert::AreEqual(std::format(L"{:02X},{:02X}",        0xFe, 0xFf      ), Read::BOM(pathUTF16BE),     "UTF-16be BOM is wrong");
+            Assert::AreEqual(std::format(L""                                      ), Read::BOM(pathANSI),        "ANSI (no BOM) is wrong");
+
+            Assert::AreEqual(L"This is some text", Read::File(pathUTF8noBOM),   "UTF-8 no BOM encoding is wrong");
+            Assert::AreEqual(L"This is some text", Read::File(pathUTF8withBOM), "UTF-8 with BOM encoding is wrong");
+            Assert::AreEqual(L"This is some text", Read::File(pathANSI),        "ANSI encoding is wrong");
+            Assert::AreEqual(L"This is some text", Read::File(pathUTF16),       "UTF-16 encoding is wrong");
+            Assert::AreEqual(L"This is some text", Read::File(pathUTF16BE),     "UTF-16BE encoding is wrong");
+        }
+    },
 };

@@ -35,6 +35,9 @@
 #define IDC_GOTO_EDIT           210
 #define IDC_STATUSBAR           220
 
+#define IDC_ENCODING_GROUP      300
+#define IDC_ENCODING_COMBO      301
+
 #define IDI_NOTEPAD             170
 
 #define IDC_NOTEPAD             109

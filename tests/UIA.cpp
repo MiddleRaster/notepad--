@@ -3,6 +3,45 @@
 
 #pragma comment(lib, "UIAutomationCore.lib")
 
+HRESULT SelectCustomComboBoxItem(HWND hComboBox, const wchar_t* itemName)
+{
+    CComPtr<IUIAutomation> pAutomation;
+    HRESULT hr = pAutomation.CoCreateInstance(CLSID_CUIAutomation);
+    if (FAILED(hr)) return hr;
+
+    CComPtr<IUIAutomationElement> pCombo;
+    hr = pAutomation->ElementFromHandle(hComboBox, &pCombo);
+    if (FAILED(hr)) return hr;
+
+    // Expand via UIA: triggers deferred item loading without a stray popup
+    CComPtr<IUIAutomationExpandCollapsePattern> pExpand;
+    pCombo->GetCurrentPatternAs(UIA_ExpandCollapsePatternId, IID_PPV_ARGS(&pExpand));
+    if (pExpand)
+        pExpand->Expand();
+    else
+        SendMessage(hComboBox, CB_SHOWDROPDOWN, TRUE, 0);
+
+    // Fetch name + SelectionItemPattern in one cross-process round-trip
+    CComPtr<IUIAutomationCacheRequest> pCache;
+    pAutomation->CreateCacheRequest(&pCache);
+    pCache->AddProperty(UIA_NamePropertyId);
+    pCache->AddPattern(UIA_SelectionItemPatternId);
+
+    CComVariant                     varItemName(itemName);
+    CComPtr<IUIAutomationCondition> pItemCondition;
+    pAutomation->CreatePropertyCondition(UIA_NamePropertyId, varItemName, &pItemCondition);
+
+    CComPtr<IUIAutomationElement> pTargetItem;
+    hr = pCombo->FindFirstBuildCache(TreeScope_Descendants, pItemCondition, pCache, &pTargetItem);
+    if (FAILED(hr) || !pTargetItem) return E_FAIL;
+
+    CComPtr<IUIAutomationSelectionItemPattern> pSelectionPattern;
+    hr = pTargetItem->GetCachedPatternAs(UIA_SelectionItemPatternId, IID_PPV_ARGS(&pSelectionPattern));
+    if (SUCCEEDED(hr) && pSelectionPattern)
+        hr = pSelectionPattern->Select();
+    return hr;
+}
+
 bool ClickMenuItemViaUIA(HWND hwndNotepad, const wchar_t* topMenuName, const wchar_t* itemName)
 {
     CComPtr<IUIAutomation> uia;

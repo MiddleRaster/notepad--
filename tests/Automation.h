@@ -345,6 +345,12 @@ namespace TestAutomation
             Assert::AreNotEqual(nullptr, dlgEdit, "Save As edit control not found");
             return WindowUtils::GetText(dlgEdit);
         }
+        void SetEncoding(const std::wstring& encoding)
+        {
+            HWND comboBox = nullptr; // this "virtual combobox" takes a while to populate...
+            Poll::While(1s,  1ms, [&]() { return nullptr == (comboBox = WindowFinder::FindDesiredChildWindow(saveAs, WindowFinder::Has::ClassName{L"ComboBox"}, WindowFinder::Is::Nth{3})); });
+            Poll::Until(1s, 10ms, [&]() { return S_OK == SelectCustomComboBoxItem(comboBox, encoding.c_str()); });
+        }
     };
 
     class EditField
