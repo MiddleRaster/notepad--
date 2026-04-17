@@ -328,6 +328,14 @@ namespace TestAutomation
             Poll::While(1s, 1ms, [this]() { return IsWindow(saveAs); });
 
             Poll::Until(1s, 1ms, [&fileName]() { return std::filesystem::exists(fileName); });
+            if (std::filesystem::exists(fileName) == false)
+            {
+                char buffer[256*4] = {0};
+                int i=0;
+                for(auto wc : std::wstring(fileName.c_str()))
+                    buffer[i++] = (char)wc;
+                Assert::Fail(buffer + std::string(" was not created"));
+            }
             Assert::IsTrue(std::filesystem::exists(fileName), "Save As did not create the file");
         }
         void Cancel()
