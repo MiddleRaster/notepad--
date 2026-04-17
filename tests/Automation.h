@@ -113,7 +113,7 @@ namespace FileUtils
                 return;
             std::this_thread::sleep_for(50ms);
         }
-        Assert::IsTrue(false, "Failed to delete test file");
+        Assert::Fail("Failed to delete test file");
     }
 }
 namespace WindowUtils

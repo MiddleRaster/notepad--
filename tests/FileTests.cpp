@@ -304,7 +304,7 @@ Test FileSaveAsTests[] = {
             {
                 const std::filesystem::path path;
                 FileDeleter(const std::filesystem::path& path) : path(path) {}
-               ~FileDeleter() { FileUtils::DeleteFileWithRetry(path); }
+               ~FileDeleter() { if (std::filesystem::exists(path)) FileUtils::DeleteFileWithRetry(path); }
             };
 
             std::cout << "Just before main" << std::endl;
