@@ -339,7 +339,8 @@ namespace TestAutomation
             Assert::AreNotEqual(nullptr, okButton, "Save As OK button not found");
             
             std::cout << "Just before SendMessageW(okButton, MB_CLICK)" << std::endl;
-            SendMessageW(okButton, BM_CLICK, 0, 0);
+          //SendMessageW(okButton, BM_CLICK, 0, 0);
+            PostMessageW(okButton, BM_CLICK, 0, 0);
 
             std::cout << "Just before Poll::While(IsWindow)" << std::endl;
             Poll::While(1s, 1ms, [this]() { return IsWindow(saveAs); });
