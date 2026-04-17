@@ -314,8 +314,9 @@ namespace TestAutomation
     class SaveAsDialog : private CommonFileDialogUtils
     {
         HWND saveAs;
+        DWORD pid;
     public:
-        SaveAsDialog(HWND hwnd) : saveAs(hwnd) {}
+        SaveAsDialog(HWND hwnd, DWORD pid=0) : saveAs(hwnd), pid(pid) {}
         void SaveFile(const std::filesystem::path& fileName)
         {
             HWND dlgEdit = WindowUtils::WaitForWindow(1s, [&]() { return FindSaveAsEdit(saveAs); });
@@ -331,8 +332,7 @@ namespace TestAutomation
             if (std::filesystem::exists(fileName) == false)
             {
                 // Did notepad-- pop up a messagebox, blocking while showing the error from IFileSaveDialog?
-                HWND hwnd = GetParent(saveAs);
-                HWND msg = WindowUtils::WaitForWindow(1s, [&]() { return WindowFinder::FindDesiredChildWindow(hwnd, WindowFinder::Has::ClassName{L"#32770"}); });
+                HWND msg = WindowUtils::WaitForWindow(1s, [&]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}); });
                 if (msg != nullptr)
                 {
                     auto mbText = MessageBoxUtils::GetStaticText(msg);
@@ -891,9 +891,10 @@ namespace TestAutomation
         }
         SaveAsDialog FindExistingFileSaveAsDialogBox()
         {
-            HWND saveAs = WindowUtils::WaitForWindow(5s, [pid = GetProcessId(proc.hProcess)]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Has::EitherChildClass{L"DUIViewWndClassName", L"DirectUIHWND"}); });
+            DWORD pid = GetProcessId(proc.hProcess);
+            HWND saveAs = WindowUtils::WaitForWindow(5s, [&]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}, WindowFinder::Has::EitherChildClass{L"DUIViewWndClassName", L"DirectUIHWND"}); });
             Assert::AreNotEqual(nullptr, saveAs, "Save As dialog not found");
-            return {saveAs};
+            return {saveAs, pid};
         }
         SaveAsDialog SaveAs()
         {
