@@ -312,24 +312,24 @@ Test FileSaveAsTests[] = {
 #if _DEBUG
             auto pathUTF8withBOM = FileUtils::GetTempFilename(L"UTF8withBOM.txt");
             auto pathANSI        = FileUtils::GetTempFilename(L"ANSI.txt");
-#endif
             auto pathUTF16       = FileUtils::GetTempFilename(L"UTF16.txt");
+#endif
             auto pathUTF16BE     = FileUtils::GetTempFilename(L"UTF16BE.txt");
             
             FileDeleter fd0(pathUTF8noBOM);
 #if _DEBUG
             FileDeleter fd1(pathUTF8withBOM);
             FileDeleter fd2(pathANSI);
-#endif
             FileDeleter fd3(pathUTF16);
+#endif
             FileDeleter fd4(pathUTF16BE);
 
             { auto saveAs = main.SaveAs(); saveAs.SetEncoding(L"UTF-8 no BOM"      ); saveAs.SaveFile(pathUTF8noBOM  .c_str()); }
 #if _DEBUG
             { auto saveAs = main.SaveAs(); saveAs.SetEncoding(L"UTF-8 with BOM"    ); saveAs.SaveFile(pathUTF8withBOM.c_str()); }
             { auto saveAs = main.SaveAs(); saveAs.SetEncoding(L"ANSI"              ); saveAs.SaveFile(pathANSI       .c_str()); }
-#endif
             { auto saveAs = main.SaveAs(); saveAs.SetEncoding(L"Unicode"           ); saveAs.SaveFile(pathUTF16      .c_str()); }
+#endif
             { auto saveAs = main.SaveAs(); saveAs.SetEncoding(L"Unicode big endian"); saveAs.SaveFile(pathUTF16BE    .c_str()); }
 
             main.ExitViaMenu();
@@ -369,16 +369,16 @@ Test FileSaveAsTests[] = {
 #if _DEBUG
             Assert::AreEqual(std::format(L"{:02X},{:02X},{:02X}", 0xEF, 0xBB, 0xBF), Read::BOM(pathUTF8withBOM), "UTF-8 with BOM is wrong");
             Assert::AreEqual(std::format(L""                                      ), Read::BOM(pathANSI),        "ANSI (no BOM) is wrong");
-#endif
             Assert::AreEqual(std::format(L"{:02X},{:02X}",        0xFF, 0xFE      ), Read::BOM(pathUTF16),       "UTF-16 BOM is wrong");
+#endif
             Assert::AreEqual(std::format(L"{:02X},{:02X}",        0xFe, 0xFf      ), Read::BOM(pathUTF16BE),     "UTF-16be BOM is wrong");
 
             Assert::AreEqual(L"This is some text", Read::File(pathUTF8noBOM),   "UTF-8 no BOM encoding is wrong");
 #if _DEBUG
             Assert::AreEqual(L"This is some text", Read::File(pathUTF8withBOM), "UTF-8 with BOM encoding is wrong");
             Assert::AreEqual(L"This is some text", Read::File(pathANSI),        "ANSI encoding is wrong");
-#endif
             Assert::AreEqual(L"This is some text", Read::File(pathUTF16),       "UTF-16 encoding is wrong");
+#endif
             Assert::AreEqual(L"This is some text", Read::File(pathUTF16BE),     "UTF-16BE encoding is wrong");
         }
     },
