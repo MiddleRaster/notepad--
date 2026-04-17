@@ -385,20 +385,23 @@ public:
         {
             Encoding encoding = Encoding::eANSI;
             DWORD selection   = 0;
-            if (SUCCEEDED(pCustomize->GetSelectedControlItem(IDC_ENCODING_COMBO, &selection)))
+            if (SUCCEEDED(hr = pCustomize->GetSelectedControlItem(IDC_ENCODING_COMBO, &selection)))
                 encoding = static_cast<Encoding>(selection);
 
             CComPtr<IShellItem> pItem;
-            if (SUCCEEDED(pDlg->GetResult(&pItem)))
+            if (SUCCEEDED(hr = pDlg->GetResult(&pItem)))
             {
                 CComHeapPtr<WCHAR> pszPath;
-                if (SUCCEEDED(pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszPath)))
+                if (SUCCEEDED(hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszPath))) {
                     FileIO::SaveFile(hWnd, edit, pszPath, FilePath, encoding);
+                    return;
+                }
             }
-        } else if (hr == HRESULT_FROM_WIN32(ERROR_CANCELLED))
-            ; // user cancelled == ok
-        else
-            ::MessageBoxW(hWnd, std::format(L"0x{:08X}", static_cast<unsigned long>(hr)).c_str(), L"Error from FileSaveDialog", MB_ICONERROR | MB_OK);
+        }
+        if (hr == HRESULT_FROM_WIN32(ERROR_CANCELLED))
+            return;
+
+        ::MessageBoxW(hWnd, std::format(L"Unable to save. IFileSaveDialog COM objects reported error: 0x{:08X}", static_cast<unsigned long>(hr)).c_str(), L"Error from FileSaveDialog", MB_ICONERROR | MB_OK);
     }
 };
 
