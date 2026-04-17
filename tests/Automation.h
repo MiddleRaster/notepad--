@@ -326,9 +326,10 @@ namespace TestAutomation
             HWND okButton = GetDlgItem(saveAs, IDOK);
             Assert::AreNotEqual(nullptr, okButton, "Save As OK button not found");
             PostMessageW(okButton, BM_CLICK, 0, 0);
-            Poll::While(1s, 1ms, [this]() { return IsWindow(saveAs); });
+            Poll::While(1s, 1ms, [this]() { return IsWindowVisible(saveAs); });
+            Assert::IsFalse(IsWindowVisible(saveAs), "after posting BM_CLICK message, saveAs dialog is still displayed");
 
-            Poll::Until(1s, 1ms, [&fileName]() { return std::filesystem::exists(fileName); });
+            Poll::Until(2s, 1ms, [&fileName]() { return std::filesystem::exists(fileName); });
             if (std::filesystem::exists(fileName) == false)
             {
                 // Did notepad-- pop up a messagebox, blocking while showing the error from IFileSaveDialog?
