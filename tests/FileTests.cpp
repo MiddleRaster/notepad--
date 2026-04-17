@@ -327,7 +327,18 @@ Test FileSaveAsTests[] = {
             FileDeleter fd4(pathUTF16BE);
 
             std::cout << "Just before 5 saveAs/SetEncoding/SaveFile calls" << std::endl;
-            { auto saveAs = main.SaveAs(); saveAs.SetEncoding(L"UTF-8 no BOM"      ); saveAs.SaveFile(pathUTF8noBOM  .c_str()); }
+            { 
+                std::cout << "Just before first saveAs call" << std::endl;
+                auto saveAs = main.SaveAs(); 
+
+                std::cout << "Just before first SetEncoding call" << std::endl;
+                saveAs.SetEncoding(L"UTF-8 no BOM"      );
+
+                std::cout << "Just before first SaveFile call" << std::endl;
+                saveAs.SaveFile(pathUTF8noBOM  .c_str());
+            }
+            std::cout << "Just afer first saveAs.SaveFile call" << std::endl;
+
             { auto saveAs = main.SaveAs(); saveAs.SetEncoding(L"UTF-8 with BOM"    ); saveAs.SaveFile(pathUTF8withBOM.c_str()); }
             { auto saveAs = main.SaveAs(); saveAs.SetEncoding(L"ANSI"              ); saveAs.SaveFile(pathANSI       .c_str()); }
             { auto saveAs = main.SaveAs(); saveAs.SetEncoding(L"Unicode"           ); saveAs.SaveFile(pathUTF16      .c_str()); }
