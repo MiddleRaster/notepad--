@@ -296,8 +296,10 @@ Test FileSaveAsTests[] = {
     },
     { std::string("Write 5 differently encoded txt files and verify them by reading them back in"), []()
         {
+            std::cout << "Just before TestAutomation::COM com; call" << std::endl;
             TestAutomation::COM com; // just in case
 
+            std::cout << "Just before FileDeleter definition" << std::endl;
             struct FileDeleter
             {
                 const std::filesystem::path path;
@@ -305,29 +307,36 @@ Test FileSaveAsTests[] = {
                ~FileDeleter() { FileUtils::DeleteFileWithRetry(path); }
             };
 
+            std::cout << "Just before main" << std::endl;
             TestAutomation::MainWindow main;
+            std::cout << "Just before GetEditField().SetText()" << std::endl;
             main.GetEditField().SetText(L"This is some text");
 
+            std::cout << "Just before creating 5 tempfilenames" << std::endl;
             auto pathUTF8noBOM   = FileUtils::GetTempFilename(L"UTF8noBOM.txt");
             auto pathUTF8withBOM = FileUtils::GetTempFilename(L"UTF8withBOM.txt");
             auto pathANSI        = FileUtils::GetTempFilename(L"ANSI.txt");
             auto pathUTF16       = FileUtils::GetTempFilename(L"UTF16.txt");
             auto pathUTF16BE     = FileUtils::GetTempFilename(L"UTF16BE.txt");
-
+            
+            std::cout << "Just before 5 FileDeleter objects' creation" << std::endl;
             FileDeleter fd0(pathUTF8noBOM);
             FileDeleter fd1(pathUTF8withBOM);
             FileDeleter fd2(pathANSI);
             FileDeleter fd3(pathUTF16);
             FileDeleter fd4(pathUTF16BE);
 
+            std::cout << "Just before 5 saveAs/SetEncoding/SaveFile calls" << std::endl;
             { auto saveAs = main.SaveAs(); saveAs.SetEncoding(L"UTF-8 no BOM"      ); saveAs.SaveFile(pathUTF8noBOM  .c_str()); }
             { auto saveAs = main.SaveAs(); saveAs.SetEncoding(L"UTF-8 with BOM"    ); saveAs.SaveFile(pathUTF8withBOM.c_str()); }
             { auto saveAs = main.SaveAs(); saveAs.SetEncoding(L"ANSI"              ); saveAs.SaveFile(pathANSI       .c_str()); }
             { auto saveAs = main.SaveAs(); saveAs.SetEncoding(L"Unicode"           ); saveAs.SaveFile(pathUTF16      .c_str()); }
             { auto saveAs = main.SaveAs(); saveAs.SetEncoding(L"Unicode big endian"); saveAs.SaveFile(pathUTF16BE    .c_str()); }
 
+            std::cout << "Just before ExitViaMenu" << std::endl;
             main.ExitViaMenu();
 
+            std::cout << "Just before Read class definition" << std::endl;
             struct Read
             {
                 static std::wstring BOM(const std::filesystem::path& filename)
@@ -359,17 +368,21 @@ Test FileSaveAsTests[] = {
                 }
             };
 
+            std::cout << "Just before 5 Asserts regarding BOMs" << std::endl;
             Assert::AreEqual(std::format(L""                                      ), Read::BOM(pathUTF8noBOM),   "UTF-8 no BOM is wrong");
             Assert::AreEqual(std::format(L"{:02X},{:02X},{:02X}", 0xEF, 0xBB, 0xBF), Read::BOM(pathUTF8withBOM), "UTF-8 with BOM is wrong");
             Assert::AreEqual(std::format(L"{:02X},{:02X}",        0xFF, 0xFE      ), Read::BOM(pathUTF16),       "UTF-16 BOM is wrong");
             Assert::AreEqual(std::format(L"{:02X},{:02X}",        0xFe, 0xFf      ), Read::BOM(pathUTF16BE),     "UTF-16be BOM is wrong");
             Assert::AreEqual(std::format(L""                                      ), Read::BOM(pathANSI),        "ANSI (no BOM) is wrong");
 
+            std::cout << "Just before 5 Asserts comparing contents of files" << std::endl;
             Assert::AreEqual(L"This is some text", Read::File(pathUTF8noBOM),   "UTF-8 no BOM encoding is wrong");
             Assert::AreEqual(L"This is some text", Read::File(pathUTF8withBOM), "UTF-8 with BOM encoding is wrong");
             Assert::AreEqual(L"This is some text", Read::File(pathANSI),        "ANSI encoding is wrong");
             Assert::AreEqual(L"This is some text", Read::File(pathUTF16),       "UTF-16 encoding is wrong");
             Assert::AreEqual(L"This is some text", Read::File(pathUTF16BE),     "UTF-16BE encoding is wrong");
+
+            std::cout << "About to exit lambda" << std::endl;
         }
     },
 };
