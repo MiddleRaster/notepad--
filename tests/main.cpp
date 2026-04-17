@@ -6,7 +6,12 @@ int main(int argc, char* argv[])
 	if ((argc > 1) && (argv[1] == std::string("-dump") || argv[1] == std::string("-d") || argv[1] == std::string("--dump") || argv[1] == std::string("/dump")))
 	{
 		struct Dumper { bool WantTest  (const std::string& name) const { std::cout << name << "\n"; return false; } };
-		struct Noop   { void operator<<(const std::string&) {} };
+		struct Noop
+		{
+			//void operator<<(const std::string&) {}
+			const Noop& operator<<(const std::string&) const { return *this; }
+			void flush() {}
+		};
 		TDD20::Test::RunTests(Dumper{}, Noop{});
 		return 0;
 	}

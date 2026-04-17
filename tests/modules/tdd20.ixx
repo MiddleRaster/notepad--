@@ -74,6 +74,10 @@ export namespace TDD20
                     continue;
 
                 try {
+                    // debugging GitHub Actions test run fails with STATUS_STACK_BUFFER_OVERRUN
+                    out << "Running test: " << name << "\n";
+                    out.flush();
+
                     func();
                     ++passed;
                     continue;
