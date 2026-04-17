@@ -296,6 +296,8 @@ Test FileSaveAsTests[] = {
     },
     { std::string("Write 5 differently encoded txt files and verify them by reading them back in"), []()
         {
+            TestAutomation::COM com; // just in case
+
             struct FileDeleter
             {
                 const std::filesystem::path path;
