@@ -330,6 +330,18 @@ namespace TestAutomation
             Poll::Until(1s, 1ms, [&fileName]() { return std::filesystem::exists(fileName); });
             if (std::filesystem::exists(fileName) == false)
             {
+                // Did notepad-- pop up a messagebox, blocking while showing the error from IFileSaveDialog?
+                DWORD pid=0;
+                GetWindowThreadProcessId(saveAs, &pid);
+                HWND msg = WindowUtils::WaitForWindow(1s, [pid]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}); });
+                if (msg != nullptr)
+                {
+                    auto mbText = MessageBoxUtils::GetStaticText(msg);
+                    MessageBoxUtils::PushOkButton(msg); // dismiss. Not necessary?
+                    Assert::AreEqual(L"", mbText, "a error messagebox popped up from the SaveAs operation, rather than saving the file");
+                }
+
+                // if not, just log
                 char buffer[256*4] = {0};
                 int i=0;
                 for(auto wc : std::wstring(fileName.c_str()))

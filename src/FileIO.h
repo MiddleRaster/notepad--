@@ -380,7 +380,8 @@ public:
         pDlg->SetFileTypeIndex(1);
         pDlg->SetDefaultExtension(L"txt");
 
-        if (SUCCEEDED(pDlg->Show(hWnd)))
+        HRESULT hr = pDlg->Show(hWnd);
+        if (SUCCEEDED(hr))
         {
             Encoding encoding = Encoding::eANSI;
             DWORD selection   = 0;
@@ -394,7 +395,10 @@ public:
                 if (SUCCEEDED(pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszPath)))
                     FileIO::SaveFile(hWnd, edit, pszPath, FilePath, encoding);
             }
-        }
+        } else if (hr == HRESULT_FROM_WIN32(ERROR_CANCELLED))
+            ; // user cancelled == ok
+        else
+            ::MessageBoxW(hWnd, std::format(L"0x{:08X}", static_cast<unsigned long>(hr)).c_str(), L"Error from FileSaveDialog", MB_ICONERROR | MB_OK);
     }
 };
 
