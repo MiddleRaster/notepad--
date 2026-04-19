@@ -753,11 +753,13 @@ namespace TestAutomation
     {
         COM()
         {
-            CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+            HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+            std::wcout << L"CoInitializeEx hr = 0x" << std::hex << std::setw(8) << std::setfill(L'0') << (unsigned)hr << L"  tid = " << std::dec << GetCurrentThreadId() << L"\n";
         }
        ~COM()
         {
             CoUninitialize();
+            std::wcout << L"called CoUninitializeEx\n";
         }
     };
     class MainWindow : private COM

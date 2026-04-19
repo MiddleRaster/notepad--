@@ -6,8 +6,16 @@
 namespace {
     struct COM
     {
-        COM() { ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED); }
-       ~COM() { ::CoUninitialize(); }
+        COM()
+        {
+            HRESULT hr = ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+            wprintf(L"CoInitializeEx hr = 0x%08X  tid = %lu\n", (unsigned)hr, GetCurrentThreadId());
+        }
+       ~COM()
+       {
+           ::CoUninitialize(); 
+           wprintf(L"called CouninitializeEx\n");
+       }
     };
 }
 
