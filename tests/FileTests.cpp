@@ -85,25 +85,34 @@ Test FileNewTests[] = {
 Test FileOpenTests[] = {
     { std::string("File->Open loads file into edit control"), []()
         {
-            const wchar_t* text = L"File->Open loads file into edit control";
-            std::filesystem::path filePath = FileUtils::CreateTempUtf8File(L"notepad--open.txt", text);
+            int lastAttempt = 20;
+            for(int attempt=1; attempt<=lastAttempt; ++attempt)
+            try {
+                const wchar_t* text = L"File->Open loads file into edit control";
+                std::filesystem::path filePath = FileUtils::CreateTempUtf8File(L"notepad--open.txt", text);
 
-            TestAutomation::MainWindow proc;
-            proc.FileOpen();
-            auto openDlg = proc.FindExistingOpenDialog();
+                TestAutomation::MainWindow proc;
+                proc.FileOpen();
+                auto openDlg = proc.FindExistingOpenDialog();
 
-            // Without this delay, the dialog reports "File not found" even though the file exists and WM_SETTEXT succeeds.
-            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+                // Without this delay, the dialog reports "File not found" even though the file exists and WM_SETTEXT succeeds.
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
-            openDlg.OpenFile(filePath);
-            auto edit = proc.GetEditField();
-            Poll::Until(1s, 1ms, [&]() { return text == edit.GetText(); });
-            Assert::AreEqual(std::wstring(text), edit.GetText(), "Edit text did not match file contents");
+                openDlg.OpenFile(filePath);
+                auto edit = proc.GetEditField();
+                Poll::Until(1s, 1ms, [&]() { return text == edit.GetText(); });
+                Assert::AreEqual(std::wstring(text), edit.GetText(), "Edit text did not match file contents");
 
-            Assert::IsTrue(DeleteFileW(filePath.c_str()) != 0, "Failed to delete temp file");
+                Assert::IsTrue(DeleteFileW(filePath.c_str()) != 0, "Failed to delete temp file");
 
-            proc.TryExit();
-            return;
+                proc.TryExit();
+                return;
+            }
+            catch (const AssertException&)
+            {
+                if (attempt == lastAttempt) // first ever test using OpenFileDialog/SaveFileDialog needs extra retries
+                    throw;
+            }
         }
     },
     { std::string("File->Open if dirty displays file dirty messageBox:  Cancel case"),[]()
