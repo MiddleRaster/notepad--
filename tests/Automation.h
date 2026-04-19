@@ -353,19 +353,35 @@ std::wcout << L"after Poll::While BM_CLICK loop, saveAs visible = " << IsWindowV
 
 
 std::wcout << L"owned windows on top of saveAs:\n";
+
+                struct EnumParams
+                {
+                    HWND saveAs;
+                    HWND confirmDlg;
+                } params{saveAs, nullptr};
                 EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL
                     {
-                        HWND saveAs = reinterpret_cast<HWND>(lParam);
-                        if (GetWindow(hwnd, GW_OWNER) == saveAs)
+                        auto& p = *reinterpret_cast<EnumParams*>(lParam);
+                        if (GetWindow(hwnd, GW_OWNER) == p.saveAs)
                         {
                             wchar_t cls[256]{};
                             wchar_t title[256]{};
                             GetClassNameW(hwnd, cls, 256);
                             GetWindowTextW(hwnd, title, 256);
                             std::wcout << L"  hwnd=" << hwnd << L" class=" << cls << L" title=" << title << L" visible=" << IsWindowVisible(hwnd) << L"\n";
+
+                            if (wcscmp(cls, L"#32770") == 0 && IsWindowVisible(hwnd))
+                            {
+                                p.confirmDlg = hwnd;
+                                return FALSE; // first one wins.
+                            }
                         }
                         return TRUE;
-                    }, reinterpret_cast<LPARAM>(saveAs));
+                    }, reinterpret_cast<LPARAM>(&params));
+
+                wchar_t text[1024]{};
+                GetDirectUIText(params.confirmDlg, text, _countof(text));
+std::wcout << L"Confirm Save As text: " << text << L"\n";
 
 
 std::wcout << L"entering UIA path\n";

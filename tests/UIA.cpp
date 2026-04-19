@@ -3,6 +3,44 @@
 
 #pragma comment(lib, "UIAutomationCore.lib")
 
+void GetDirectUIText(HWND hwndDialog, wchar_t* buf, int bufLen)
+{
+    buf[0] = L'\0';
+
+    CComPtr<IUIAutomation>        uia;
+    if (SUCCEEDED(uia.CoCreateInstance(__uuidof(CUIAutomation))))
+    {
+        CComPtr<IUIAutomationElement> root;
+        if (SUCCEEDED(uia->ElementFromHandle(hwndDialog, &root)))
+        {
+            CComPtr<IUIAutomationCondition> trueCondition;
+            if (SUCCEEDED(uia->CreateTrueCondition(&trueCondition)))
+            {
+                CComPtr<IUIAutomationElementArray> elements;
+                if (SUCCEEDED(root->FindAll(TreeScope_Subtree, trueCondition, &elements)))
+                {
+                    int count = 0;
+                    elements->get_Length(&count);
+                    for (int i=0; i<count; i++)
+                    {
+                        CComPtr<IUIAutomationElement> el;
+                        if (SUCCEEDED(elements->GetElement(i, &el)))
+                        {
+                            CComBSTR name;
+                            if (SUCCEEDED(el->get_CurrentName(&name)) && name.Length() > 0)
+                            {
+                                if (buf[0] != L'\0')
+                                    wcsncat_s(buf, bufLen, L" | ", _TRUNCATE);
+                                wcsncat_s(buf, bufLen, name, _TRUNCATE);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 HRESULT PushCustomizedFileSaveDialogOkButton(HWND hwndSaveButton)
 {
     HRESULT hr = E_FAIL;;
