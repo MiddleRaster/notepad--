@@ -3,8 +3,18 @@
 
 #pragma comment(lib, "UIAutomationCore.lib")
 
+namespace {
+    struct COM
+    {
+        COM() { ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED); }
+       ~COM() { ::CoUninitialize(); }
+    };
+}
+
 HRESULT PushCustomizedFileSaveDialogOkButton(HWND hwndSaveButton)
 {
+    COM com;
+
     HRESULT hr = E_FAIL;;
     CComPtr<IUIAutomation>  uia;
     if (SUCCEEDED(hr = uia.CoCreateInstance(CLSID_CUIAutomation)))
