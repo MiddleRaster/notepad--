@@ -322,6 +322,7 @@ namespace TestAutomation
         SaveAsDialog(HWND hwnd, DWORD pid=0) : saveAs(hwnd), pid(pid) {}
         void SaveFile(const std::filesystem::path& fileName)
         {
+std::wcout << L"Entering SaveFile: fileName is " << fileName.native() << L"\n";
             UIA uia;
 
             HWND dlgEdit = WindowUtils::WaitForWindow(1s, [&]() { return FindSaveAsEdit(saveAs); });
@@ -333,10 +334,13 @@ namespace TestAutomation
             Assert::AreEqual(S_OK, uia.Click(okButton), "UIA failure clicking Save/OK button on SaveAs dialog");
 
             Poll::While(1s, 1ms, [&]() { return IsWindowVisible(saveAs); });
+std::wcout << L"Checking visibility after polling for 1 sec: " << IsWindowVisible(saveAs) << L"\n";
             Assert::IsFalse(IsWindowVisible(saveAs), "after clicking Save/OK, SaveAs dialog is still displayed");
 
             Poll::Until(2s, 1ms, [&fileName]() { return std::filesystem::exists(fileName); });
+std::wcout << L"Checking file existence after polling for 2 secs: " << std::filesystem::exists(fileName) << L"\n";
             Assert::IsTrue(std::filesystem::exists(fileName), "Save As did not create the file");
+std::wcout << L"Leaving SaveFile\n";
         }
         void Cancel()
         {
