@@ -328,7 +328,10 @@ namespace TestAutomation
 
             HWND okButton = GetDlgItem(saveAs, IDOK);
             Assert::AreNotEqual(nullptr, okButton, "Save As OK button not found");
+std::wcout << L"okButton = " << okButton << L"\n";
+
             SendMessageTimeoutW(okButton, BM_CLICK, 0, 0, SMTO_ABORTIFHUNG, 2000, nullptr);
+std::wcout << L"after first BM_CLICK, saveAs visible = " << IsWindowVisible(saveAs) << L"\n";
             if (IsWindowVisible(saveAs))
             {
                 Poll::While(10s, 1ms, [&]()
@@ -336,12 +339,16 @@ namespace TestAutomation
                         SendMessageTimeoutW(okButton, BM_CLICK, 0, 0, SMTO_ABORTIFHUNG, 20, nullptr);
                         return IsWindowVisible(saveAs);
                     });
+std::wcout << L"after Poll::While BM_CLICK loop, saveAs visible = " << IsWindowVisible(saveAs) << L"\n";
             }
             if (IsWindowVisible(saveAs))
             { // try UIA way to push the ok button
+std::wcout << L"entering UIA path\n";
                 HRESULT hr = PushCustomizedFileSaveDialogOkButton(okButton);
+std::wcout << L"PushCustomizedFileSaveDialogOkButton hr = 0x" << std::hex << std::setw(8) << std::setfill(L'0') << (unsigned)hr << std::dec << L"\n";
                 Assert::AreEqual(S_OK, hr, "UIA failed to push the ok button");
                 Poll::While(10s, 1ms, [&]() { return IsWindowVisible(saveAs); });
+std::wcout << L"after UIA Poll::While, saveAs visible = " << IsWindowVisible(saveAs) << L"\n";
             }
             Assert::IsFalse(IsWindowVisible(saveAs), "after posting BM_CLICK message, saveAs dialog is still displayed");
 
