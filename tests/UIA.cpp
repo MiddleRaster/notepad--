@@ -1,7 +1,83 @@
-﻿#include <atlbase.h>
+﻿#include <memory>
+
+#include <atlbase.h>
 #include <UIAutomation.h>
 
+#include "UIA.h"
+
 #pragma comment(lib, "UIAutomationCore.lib")
+
+class UIAimpl
+{
+    CComPtr<IUIAutomation> uia;
+public:
+    UIAimpl() { uia.CoCreateInstance(CLSID_CUIAutomation); }
+
+    HRESULT Click(HWND hwnd)
+    {
+        HRESULT hr = E_FAIL;
+        CComPtr<IUIAutomationElement> el;
+        if (SUCCEEDED(hr = uia->ElementFromHandle(hwnd, &el)))
+        {
+            CComPtr<IUIAutomationInvokePattern> invoke;
+            if (SUCCEEDED(hr = el->GetCurrentPatternAs(UIA_InvokePatternId, IID_PPV_ARGS(&invoke))))
+                if (SUCCEEDED(hr = invoke->Invoke()))
+                    return S_OK;
+        }
+        return hr;
+    }
+    HRESULT SetText(HWND hwnd, const wchar_t* text)
+    {
+        HRESULT hr = E_FAIL;
+        CComPtr<IUIAutomationElement> el;
+        if (SUCCEEDED(hr = uia->ElementFromHandle(hwnd, &el)))
+        {
+            CComPtr<IUIAutomationValuePattern> valuePattern;
+            if (SUCCEEDED(hr = el->GetCurrentPatternAs(UIA_ValuePatternId, IID_PPV_ARGS(&valuePattern))))
+                hr = valuePattern->SetValue(CComBSTR(text));
+        }
+        return hr;
+    }
+    HRESULT SelectByName(HWND hComboBox, const wchar_t* itemName)
+    {
+        CComPtr<IUIAutomationElement> pCombo;
+        HRESULT hr = uia->ElementFromHandle(hComboBox, &pCombo);
+        if (FAILED(hr)) return hr;
+
+        // Expand via UIA: triggers deferred item loading without a stray popup
+        CComPtr<IUIAutomationExpandCollapsePattern> pExpand;
+        pCombo->GetCurrentPatternAs(UIA_ExpandCollapsePatternId, IID_PPV_ARGS(&pExpand));
+        if (pExpand)
+            pExpand->Expand();
+        else
+            SendMessage(hComboBox, CB_SHOWDROPDOWN, TRUE, 0);
+
+        // Fetch name + SelectionItemPattern in one cross-process round-trip
+        CComPtr<IUIAutomationCacheRequest> pCache;
+        uia->CreateCacheRequest(&pCache);
+        pCache->AddProperty(UIA_NamePropertyId);
+        pCache->AddPattern(UIA_SelectionItemPatternId);
+
+        CComVariant                     varItemName(itemName);
+        CComPtr<IUIAutomationCondition> pItemCondition;
+        uia->CreatePropertyCondition(UIA_NamePropertyId, varItemName, &pItemCondition);
+
+        CComPtr<IUIAutomationElement> pTargetItem;
+        hr = pCombo->FindFirstBuildCache(TreeScope_Descendants, pItemCondition, pCache, &pTargetItem);
+        if (FAILED(hr) || !pTargetItem) return E_FAIL;
+
+        CComPtr<IUIAutomationSelectionItemPattern> pSelectionPattern;
+        hr = pTargetItem->GetCachedPatternAs(UIA_SelectionItemPatternId, IID_PPV_ARGS(&pSelectionPattern));
+        if (SUCCEEDED(hr) && pSelectionPattern)
+            hr = pSelectionPattern->Select();
+        return hr;
+    }
+};
+        UIA::~UIA() = default;
+        UIA::UIA          ()                                   {        impl = std::make_unique<UIAimpl>(); }
+HRESULT UIA::Click        (HWND hwnd)                          { return impl->Click(hwnd); }
+HRESULT UIA::SetText      (HWND hwnd, const wchar_t* text    ) { return impl->SetText(hwnd, text); }
+HRESULT UIA::SelectByName (HWND hwnd, const wchar_t* itemName) { return impl->SelectByName(hwnd, itemName); }
 
 void GetDirectUIText(HWND hwndDialog, wchar_t* buf, int bufLen)
 {
@@ -39,24 +115,6 @@ void GetDirectUIText(HWND hwndDialog, wchar_t* buf, int bufLen)
             }
         }
     }
-}
-
-HRESULT PushCustomizedFileSaveDialogOkButton(HWND hwndSaveButton)
-{
-    HRESULT hr = E_FAIL;;
-    CComPtr<IUIAutomation>  uia;
-    if (SUCCEEDED(hr = uia.CoCreateInstance(CLSID_CUIAutomation)))
-    {
-        CComPtr<IUIAutomationElement> el;
-        if (SUCCEEDED(hr = uia->ElementFromHandle(hwndSaveButton, &el)))
-        {
-            CComPtr<IUIAutomationInvokePattern> invoke;
-            if (SUCCEEDED(hr = el->GetCurrentPatternAs(UIA_InvokePatternId, IID_PPV_ARGS(&invoke))))
-                if (SUCCEEDED(hr = invoke->Invoke()))
-                    return S_OK;
-        }
-    }
-    return hr;
 }
 
 HRESULT SelectCustomComboBoxItem(HWND hComboBox, const wchar_t* itemName)

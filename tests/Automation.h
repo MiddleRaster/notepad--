@@ -322,97 +322,20 @@ namespace TestAutomation
         SaveAsDialog(HWND hwnd, DWORD pid=0) : saveAs(hwnd), pid(pid) {}
         void SaveFile(const std::filesystem::path& fileName)
         {
-std::wcout << L"saving to: " << fileName << L"\n";
-std::wcout << L"file exists at SaveFile entry: " << std::filesystem::exists(fileName) << L"\n";
-
+            UIA uia;
 
             HWND dlgEdit = WindowUtils::WaitForWindow(1s, [&]() { return FindSaveAsEdit(saveAs); });
             Assert::AreNotEqual(nullptr, dlgEdit, "Save As edit control not found");
-            Assert::IsTrue(SendMessageW(dlgEdit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(fileName.c_str())) != 0, "Failed to set Save As filename");
-
-            Poll::While(100ms, 100ms, []() { return true; });  // testing a pause before clicking ok
-
-std::wcout << L"edit field contains: " << WindowUtils::GetText(dlgEdit) << L"\n";
-            
+            Assert::AreEqual(S_OK, uia.SetText(dlgEdit, fileName.c_str()), "UIA failure setting text in SaveAs dialog's edit field");
 
             HWND okButton = GetDlgItem(saveAs, IDOK);
             Assert::AreNotEqual(nullptr, okButton, "Save As OK button not found");
-std::wcout << L"okButton = " << okButton << L"\n";
+            Assert::AreEqual(S_OK, uia.Click(okButton), "UIA failure clicking Save/OK button on SaveAs dialog");
 
-            SendMessageTimeoutW(okButton, BM_CLICK, 0, 0, SMTO_ABORTIFHUNG, 2000, nullptr);
-std::wcout << L"after first BM_CLICK, saveAs visible = " << IsWindowVisible(saveAs) << L"\n";
-            if (IsWindowVisible(saveAs))
-            {
-                Poll::While(10s, 1ms, [&]()
-                    {
-                        SendMessageTimeoutW(okButton, BM_CLICK, 0, 0, SMTO_ABORTIFHUNG, 20, nullptr);
-                        return IsWindowVisible(saveAs);
-                    });
-std::wcout << L"after Poll::While BM_CLICK loop, saveAs visible = " << IsWindowVisible(saveAs) << L"\n";
-            }
-            if (IsWindowVisible(saveAs))
-            { // try UIA way to push the ok button
-
-
-std::wcout << L"owned windows on top of saveAs:\n";
-
-                struct EnumParams
-                {
-                    HWND saveAs;
-                    HWND confirmDlg;
-                } params{saveAs, nullptr};
-                EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL
-                    {
-                        auto& p = *reinterpret_cast<EnumParams*>(lParam);
-                        if (GetWindow(hwnd, GW_OWNER) == p.saveAs)
-                        {
-                            wchar_t cls[256]{};
-                            wchar_t title[256]{};
-                            GetClassNameW(hwnd, cls, 256);
-                            GetWindowTextW(hwnd, title, 256);
-                            std::wcout << L"  hwnd=" << hwnd << L" class=" << cls << L" title=" << title << L" visible=" << IsWindowVisible(hwnd) << L"\n";
-
-                            if (wcscmp(cls, L"#32770") == 0 && IsWindowVisible(hwnd))
-                            {
-                                p.confirmDlg = hwnd;
-                                return FALSE; // first one wins.
-                            }
-                        }
-                        return TRUE;
-                    }, reinterpret_cast<LPARAM>(&params));
-
-                wchar_t text[1024]{};
-                GetDirectUIText(params.confirmDlg, text, _countof(text));
-std::wcout << L"Confirm Save As text: " << text << L"\n";
-
-
-std::wcout << L"entering UIA path\n";
-                HRESULT hr = PushCustomizedFileSaveDialogOkButton(okButton);
-std::wcout << L"PushCustomizedFileSaveDialogOkButton hr = 0x" << std::hex << std::setw(8) << std::setfill(L'0') << (unsigned)hr << std::dec << L"\n";
-                Assert::AreEqual(S_OK, hr, "UIA failed to push the ok button");
-                Poll::While(10s, 1ms, [&]() { return IsWindowVisible(saveAs); });
-std::wcout << L"after UIA Poll::While, saveAs visible = " << IsWindowVisible(saveAs) << L"\n";
-            }
-            Assert::IsFalse(IsWindowVisible(saveAs), "after posting BM_CLICK message, saveAs dialog is still displayed");
+            Poll::While(1s, 1ms, [&]() { return IsWindowVisible(saveAs); });
+            Assert::IsFalse(IsWindowVisible(saveAs), "after clicking Save/OK, SaveAs dialog is still displayed");
 
             Poll::Until(2s, 1ms, [&fileName]() { return std::filesystem::exists(fileName); });
-            if (std::filesystem::exists(fileName) == false)
-            {
-                // if notepad-- pop up a messagebox, blocking while showing the error from IFileSaveDialog
-                HWND msg = WindowUtils::WaitForWindow(1s, [&]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}); });
-                if (msg != nullptr)
-                {
-                    auto mbText = MessageBoxUtils::GetStaticText(msg);
-                    MessageBoxUtils::PushOkButton(msg); // dismiss. Not necessary?
-                    Assert::AreEqual(L"", mbText, "a error messagebox popped up from the SaveAs operation, rather than saving the file");
-                }
-
-                // if not, just log
-                std::string ns;
-                for(auto wc : std::wstring(fileName.c_str()))
-                    ns += (char)wc;
-                Assert::Fail(ns + " was not created");
-            }
             Assert::IsTrue(std::filesystem::exists(fileName), "Save As did not create the file");
         }
         void Cancel()
