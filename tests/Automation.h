@@ -337,6 +337,12 @@ namespace TestAutomation
                         return IsWindowVisible(saveAs);
                     });
             }
+            if (IsWindowVisible(saveAs))
+            { // try UIA way to push the ok button
+                HRESULT hr = PushCustomizedFileSaveDialogOkButton(okButton);
+                Assert::AreEqual(S_OK, hr, "UIA failed to push the ok button");
+                Poll::While(10s, 1ms, [&]() { return IsWindowVisible(saveAs); });
+            }
             Assert::IsFalse(IsWindowVisible(saveAs), "after posting BM_CLICK message, saveAs dialog is still displayed");
 
             Poll::Until(2s, 1ms, [&fileName]() { return std::filesystem::exists(fileName); });

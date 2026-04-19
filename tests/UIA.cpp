@@ -3,6 +3,24 @@
 
 #pragma comment(lib, "UIAutomationCore.lib")
 
+HRESULT PushCustomizedFileSaveDialogOkButton(HWND hwndSaveButton)
+{
+    HRESULT hr = E_FAIL;;
+    CComPtr<IUIAutomation>  uia;
+    if (SUCCEEDED(hr = uia.CoCreateInstance(CLSID_CUIAutomation)))
+    {
+        CComPtr<IUIAutomationElement> el;
+        if (SUCCEEDED(hr = uia->ElementFromHandle(hwndSaveButton, &el)))
+        {
+            CComPtr<IUIAutomationInvokePattern> invoke;
+            if (SUCCEEDED(hr = el->GetCurrentPatternAs(UIA_InvokePatternId, IID_PPV_ARGS(&invoke))))
+                if (SUCCEEDED(hr = invoke->Invoke()))
+                    return S_OK;
+        }
+    }
+    return hr;
+}
+
 HRESULT SelectCustomComboBoxItem(HWND hComboBox, const wchar_t* itemName)
 {
     CComPtr<IUIAutomation> pAutomation;
