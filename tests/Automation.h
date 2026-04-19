@@ -330,6 +330,8 @@ std::wcout << L"file exists at SaveFile entry: " << std::filesystem::exists(file
             Assert::AreNotEqual(nullptr, dlgEdit, "Save As edit control not found");
             Assert::IsTrue(SendMessageW(dlgEdit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(fileName.c_str())) != 0, "Failed to set Save As filename");
 
+            Poll::While(100ms, 100ms, []() { return true; });  // testing a pause before clicking ok
+
 std::wcout << L"edit field contains: " << WindowUtils::GetText(dlgEdit) << L"\n";
             
 
