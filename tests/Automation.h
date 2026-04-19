@@ -339,6 +339,43 @@ std::wcout << L"edit field contents:           " << buffer << L"\n";
 
             Poll::While(1s, 1ms, [&]() { return IsWindowVisible(saveAs); });
 std::wcout << L"Checking visibility after polling for 1 sec: " << IsWindowVisible(saveAs) << L"\n";
+
+            if (IsWindowVisible(saveAs))
+            {
+                struct EnumParams
+                {
+                    HWND saveAs;
+                    HWND confirmDlg;
+                    DWORD pid;
+                } params{saveAs, nullptr, this->pid};
+                EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL
+                    {
+                        auto& p = *reinterpret_cast<EnumParams*>(lParam);
+
+                        DWORD pid = 0;
+                        GetWindowThreadProcessId(hwnd, &pid);
+                        if (pid == p.pid)
+                     // if (GetWindow(hwnd, GW_OWNER) == p.saveAs)
+                        {
+                            wchar_t cls[256]{};
+                            wchar_t title[256]{};
+                            GetClassNameW(hwnd, cls, 256);
+                            GetWindowTextW(hwnd, title, 256);
+                            std::wcout << L"  hwnd=" << hwnd << L" class=" << cls << L" title=" << title << L" visible=" << IsWindowVisible(hwnd) << L"\n";
+
+                            if (wcscmp(cls, L"#32770") == 0 && IsWindowVisible(hwnd))
+                            {
+                                p.confirmDlg = hwnd;
+                                return FALSE; // first one wins.
+                            }
+                        }
+                        return TRUE;
+                    }, reinterpret_cast<LPARAM>(&params));
+
+                wchar_t text[1024]{};
+                GetDirectUIText(params.confirmDlg, text, _countof(text));
+std::wcout << L"Confirm Save As text: " << text << L"\n";
+            }
             Assert::IsFalse(IsWindowVisible(saveAs), "after clicking Save/OK, SaveAs dialog is still displayed");
 
             Poll::Until(2s, 1ms, [&fileName]() { return std::filesystem::exists(fileName); });
