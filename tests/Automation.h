@@ -323,6 +323,8 @@ namespace TestAutomation
         void SaveFile(const std::filesystem::path& fileName)
         {
 std::wcout << L"saving to: " << fileName << L"\n";
+std::wcout << L"file exists at SaveFile entry: " << std::filesystem::exists(fileName) << L"\n";
+
 
             HWND dlgEdit = WindowUtils::WaitForWindow(1s, [&]() { return FindSaveAsEdit(saveAs); });
             Assert::AreNotEqual(nullptr, dlgEdit, "Save As edit control not found");
