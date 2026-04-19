@@ -298,9 +298,12 @@ namespace TestAutomation
 
             HWND okButton = GetDlgItem(openDlg, IDOK);
             Assert::AreNotEqual(nullptr, okButton, "File Open OK button not found");
-            SendMessageW(okButton, BM_CLICK, 0, 0);
 
-            Poll::While(1s, 1ms, [this]() { return IsWindow(openDlg); });
+            Poll::While(1s, 1ms, [&]()
+                {
+                    SendMessageW(okButton, BM_CLICK, 0, 0);
+                    return IsWindowVisible(openDlg);
+                });
         }
         void PressCancel()
         {
@@ -325,19 +328,21 @@ namespace TestAutomation
 
             HWND okButton = GetDlgItem(saveAs, IDOK);
             Assert::AreNotEqual(nullptr, okButton, "Save As OK button not found");
-         // PostMessageW(okButton, BM_CLICK, 0, 0);
-            Poll::While(1s, 1ms, [&]()
-                {
-                    PostMessageW(okButton, BM_CLICK, 0, 0);
-                    return IsWindowVisible(saveAs);
-                });
-
+            SendMessageTimeoutW(okButton, BM_CLICK, 0, 0, SMTO_ABORTIFHUNG, 2000, nullptr);
+            if (IsWindowVisible(saveAs))
+            {
+                Poll::While(10s, 1ms, [&]()
+                    {
+                        SendMessageTimeoutW(okButton, BM_CLICK, 0, 0, SMTO_ABORTIFHUNG, 20, nullptr);
+                        return IsWindowVisible(saveAs);
+                    });
+            }
             Assert::IsFalse(IsWindowVisible(saveAs), "after posting BM_CLICK message, saveAs dialog is still displayed");
 
             Poll::Until(2s, 1ms, [&fileName]() { return std::filesystem::exists(fileName); });
             if (std::filesystem::exists(fileName) == false)
             {
-                // Did notepad-- pop up a messagebox, blocking while showing the error from IFileSaveDialog?
+                // if notepad-- pop up a messagebox, blocking while showing the error from IFileSaveDialog
                 HWND msg = WindowUtils::WaitForWindow(1s, [&]() { return WindowFinder::FindDesiredChildWindow(nullptr, WindowFinder::Has::Pid{pid}, WindowFinder::Has::ClassName{L"#32770"}); });
                 if (msg != nullptr)
                 {
