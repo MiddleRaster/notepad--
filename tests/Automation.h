@@ -329,6 +329,10 @@ std::wcout << L"Entering SaveFile: fileName is " << fileName.native() << L"\n";
             Assert::AreNotEqual(nullptr, dlgEdit, "Save As edit control not found");
             Assert::AreEqual(S_OK, uia.SetText(dlgEdit, fileName.c_str()), "UIA failure setting text in SaveAs dialog's edit field");
 
+            wchar_t buffer[1024] = {0};
+            uia.GetText(dlgEdit, buffer, 1024);
+std::wcout << L"edit field contents:           " << buffer << L"\n";
+
             HWND okButton = GetDlgItem(saveAs, IDOK);
             Assert::AreNotEqual(nullptr, okButton, "Save As OK button not found");
             Assert::AreEqual(S_OK, uia.Click(okButton), "UIA failure clicking Save/OK button on SaveAs dialog");

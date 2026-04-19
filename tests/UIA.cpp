@@ -38,6 +38,27 @@ public:
         }
         return hr;
     }
+    HRESULT GetText(HWND hwnd, wchar_t* buffer, size_t size)
+    {
+        buffer[0] = L'\0';
+        HRESULT hr;
+        CComPtr<IUIAutomationElement> element;
+        if (SUCCEEDED(hr = uia->ElementFromHandle(hwnd, &element))) {
+            CComPtr<IUIAutomationValuePattern> value;
+            if (SUCCEEDED(hr = element->GetCurrentPatternAs(UIA_ValuePatternId, IID_PPV_ARGS(&value)))) {
+                CComBSTR bstr;
+                if (SUCCEEDED(hr = value->get_CurrentValue(&bstr))) {
+                    size_t len = bstr.Length();
+                    if (len >= size)
+                        len  = size-1;
+                    memcpy(buffer, bstr, len*sizeof(wchar_t));
+                    buffer[len] = L'\0';
+                }
+            }
+        }
+        return hr;
+    }
+
     HRESULT SelectByName(HWND hComboBox, const wchar_t* itemName)
     {
         CComPtr<IUIAutomationElement> pCombo;
@@ -74,10 +95,11 @@ public:
     }
 };
         UIA::~UIA() = default;
-        UIA::UIA          ()                                   {        impl = std::make_unique<UIAimpl>(); }
-HRESULT UIA::Click        (HWND hwnd)                          { return impl->Click(hwnd); }
-HRESULT UIA::SetText      (HWND hwnd, const wchar_t* text    ) { return impl->SetText(hwnd, text); }
-HRESULT UIA::SelectByName (HWND hwnd, const wchar_t* itemName) { return impl->SelectByName(hwnd, itemName); }
+        UIA::UIA          (                                             ) {        impl = std::make_unique<UIAimpl>(); }
+HRESULT UIA::Click        (HWND hwnd                                    ) { return impl->Click       (hwnd); }
+HRESULT UIA::SetText      (HWND hwnd, const wchar_t* text               ) { return impl->SetText     (hwnd, text); }
+HRESULT UIA::GetText      (HWND hwnd,       wchar_t* buffer, size_t size) { return impl->GetText     (hwnd, buffer, size); }
+HRESULT UIA::SelectByName (HWND hwnd, const wchar_t* itemName           ) { return impl->SelectByName(hwnd, itemName); }
 
 void GetDirectUIText(HWND hwndDialog, wchar_t* buf, int bufLen)
 {

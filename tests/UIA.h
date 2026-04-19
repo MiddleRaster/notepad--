@@ -18,6 +18,7 @@ public:
    ~UIA();
     HRESULT Click       (HWND hwnd);
     HRESULT SetText     (HWND hEdit,     const wchar_t* text);
+    HRESULT GetText     (HWND hEdit,           wchar_t* buffer, size_t size);
     HRESULT SelectByName(HWND hComboBox, const wchar_t* itemName);
 };
 
