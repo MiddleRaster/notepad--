@@ -32,6 +32,9 @@ public:
         CComPtr<IUIAutomationElement> el;
         if (SUCCEEDED(hr = uia->ElementFromHandle(hwnd, &el)))
         {
+            el->SetFocus();
+            Sleep(50);
+
             CComPtr<IUIAutomationValuePattern> valuePattern;
             if (SUCCEEDED(hr = el->GetCurrentPatternAs(UIA_ValuePatternId, IID_PPV_ARGS(&valuePattern))))
                 hr = valuePattern->SetValue(CComBSTR(text));
