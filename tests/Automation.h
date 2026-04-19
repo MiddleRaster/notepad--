@@ -322,9 +322,14 @@ namespace TestAutomation
         SaveAsDialog(HWND hwnd, DWORD pid=0) : saveAs(hwnd), pid(pid) {}
         void SaveFile(const std::filesystem::path& fileName)
         {
+std::wcout << L"saving to: " << fileName << L"\n";
+
             HWND dlgEdit = WindowUtils::WaitForWindow(1s, [&]() { return FindSaveAsEdit(saveAs); });
             Assert::AreNotEqual(nullptr, dlgEdit, "Save As edit control not found");
             Assert::IsTrue(SendMessageW(dlgEdit, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(fileName.c_str())) != 0, "Failed to set Save As filename");
+
+std::wcout << L"edit field contains: " << WindowUtils::GetText(dlgEdit) << L"\n";
+            
 
             HWND okButton = GetDlgItem(saveAs, IDOK);
             Assert::AreNotEqual(nullptr, okButton, "Save As OK button not found");
