@@ -343,6 +343,24 @@ std::wcout << L"after Poll::While BM_CLICK loop, saveAs visible = " << IsWindowV
             }
             if (IsWindowVisible(saveAs))
             { // try UIA way to push the ok button
+
+
+std::wcout << L"owned windows on top of saveAs:\n";
+                EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL
+                    {
+                        HWND saveAs = reinterpret_cast<HWND>(lParam);
+                        if (GetWindow(hwnd, GW_OWNER) == saveAs)
+                        {
+                            wchar_t cls[256]{};
+                            wchar_t title[256]{};
+                            GetClassNameW(hwnd, cls, 256);
+                            GetWindowTextW(hwnd, title, 256);
+                            std::wcout << L"  hwnd=" << hwnd << L" class=" << cls << L" title=" << title << L" visible=" << IsWindowVisible(hwnd) << L"\n";
+                        }
+                        return TRUE;
+                    }, reinterpret_cast<LPARAM>(saveAs));
+
+
 std::wcout << L"entering UIA path\n";
                 HRESULT hr = PushCustomizedFileSaveDialogOkButton(okButton);
 std::wcout << L"PushCustomizedFileSaveDialogOkButton hr = 0x" << std::hex << std::setw(8) << std::setfill(L'0') << (unsigned)hr << std::dec << L"\n";
@@ -760,13 +778,13 @@ std::wcout << L"after UIA Poll::While, saveAs visible = " << IsWindowVisible(sav
     {
         COM()
         {
-            HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
-            std::wcout << L"CoInitializeEx hr = 0x" << std::hex << std::setw(8) << std::setfill(L'0') << (unsigned)hr << L"  tid = " << std::dec << GetCurrentThreadId() << L"\n";
+            /*HRESULT hr =*/ CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+        //  std::wcout << L"CoInitializeEx hr = 0x" << std::hex << std::setw(8) << std::setfill(L'0') << (unsigned)hr << L"  tid = " << std::dec << GetCurrentThreadId() << L"\n";
         }
        ~COM()
         {
             CoUninitialize();
-            std::wcout << L"called CoUninitializeEx\n";
+        //  std::wcout << L"called CoUninitializeEx\n";
         }
     };
     class MainWindow : private COM
