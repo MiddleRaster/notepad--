@@ -390,11 +390,10 @@ std::wcout << L"after UIA Poll::While, saveAs visible = " << IsWindowVisible(sav
                 }
 
                 // if not, just log
-                char buffer[256*4] = {0};
-                int i=0;
+                std::string ns;
                 for(auto wc : std::wstring(fileName.c_str()))
-                    buffer[i++] = (char)wc;
-                Assert::Fail(buffer + std::string(" was not created"));
+                    ns += (char)wc;
+                Assert::Fail(ns + " was not created");
             }
             Assert::IsTrue(std::filesystem::exists(fileName), "Save As did not create the file");
         }

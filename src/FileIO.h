@@ -12,6 +12,26 @@
 #include <cstdint>
 #include <vector>
 
+
+
+#include <stdio.h>
+namespace {
+    inline void EnsureConsole()
+    {
+        // If already attached, do nothing
+        if (GetConsoleWindow())
+            return;
+
+        // Attach to parent console (the cmd.exe that launched us)
+        AttachConsole(ATTACH_PARENT_PROCESS);
+
+        // Redirect stdout to the console
+        FILE* fp;
+        freopen_s(&fp, "CONOUT$", "w", stdout);
+        freopen_s(&fp, "CONOUT$", "w", stderr);
+    }
+}
+
 struct FileIO
 {
     enum Encoding
@@ -393,6 +413,10 @@ public:
             {
                 CComHeapPtr<WCHAR> pszPath;
                 if (SUCCEEDED(hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszPath))) {
+
+EnsureConsole();
+wprintf(L"[DEBUG] Save dialog committed path: %s\n", pszPath.m_pData);
+FreeConsole();
                     FileIO::SaveFile(hWnd, edit, pszPath, FilePath, encoding);
                     return;
                 }
