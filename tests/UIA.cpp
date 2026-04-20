@@ -90,46 +90,157 @@ public:
 
     HRESULT SelectByName(HWND hComboBox, const wchar_t* itemName)
     {
+        HRESULT hr;
         CComPtr<IUIAutomationElement> pCombo;
-        HRESULT hr = uia->ElementFromHandle(hComboBox, &pCombo);
-        if (FAILED(hr)) return hr;
+        if (SUCCEEDED(hr = uia->ElementFromHandle(hComboBox, &pCombo))) {
 
-        // Expand via UIA: triggers deferred item loading without a stray popup
-        CComPtr<IUIAutomationExpandCollapsePattern> pExpand;
-        pCombo->GetCurrentPatternAs(UIA_ExpandCollapsePatternId, IID_PPV_ARGS(&pExpand));
-        if (pExpand)
-            pExpand->Expand();
-        else
-            SendMessage(hComboBox, CB_SHOWDROPDOWN, TRUE, 0);
+            CComPtr<IUIAutomationExpandCollapsePattern> pExpand;
+            pCombo->GetCurrentPatternAs(UIA_ExpandCollapsePatternId, IID_PPV_ARGS(&pExpand));
+            if (pExpand)
+                pExpand->Expand(); // Expand via UIA: triggers deferred item loading without a stray popup
+            else
+                SendMessage(hComboBox, CB_SHOWDROPDOWN, TRUE, 0);
 
-        // Fetch name + SelectionItemPattern in one cross-process round-trip
-        CComPtr<IUIAutomationCacheRequest> pCache;
-        uia->CreateCacheRequest(&pCache);
-        pCache->AddProperty(UIA_NamePropertyId);
-        pCache->AddPattern(UIA_SelectionItemPatternId);
+            // Fetch name + SelectionItemPattern in one cross-process round-trip
+            CComPtr<IUIAutomationCacheRequest> pCache;
+            if (SUCCEEDED(hr = uia->CreateCacheRequest(&pCache))) {
+                pCache->AddProperty(UIA_NamePropertyId);
+                pCache->AddPattern (UIA_SelectionItemPatternId);
+                CComVariant varItemName(itemName);
+                CComPtr<IUIAutomationCondition> pItemCondition;
+                if (SUCCEEDED(hr = uia->CreatePropertyCondition(UIA_NamePropertyId, varItemName, &pItemCondition))) {
+                    CComPtr<IUIAutomationElement> pTargetItem;
+                    if (SUCCEEDED(hr = pCombo->FindFirstBuildCache(TreeScope_Descendants, pItemCondition, pCache, &pTargetItem))) {
+                        CComPtr<IUIAutomationSelectionItemPattern> pSelectionPattern;
+                        if (SUCCEEDED(hr = pTargetItem->GetCachedPatternAs(UIA_SelectionItemPatternId, IID_PPV_ARGS(&pSelectionPattern))))
+                            hr = pSelectionPattern->Select();
+                    }
+                }
+            }
+        }
+        return hr;
+    }
 
-        CComVariant                     varItemName(itemName);
-        CComPtr<IUIAutomationCondition> pItemCondition;
-        uia->CreatePropertyCondition(UIA_NamePropertyId, varItemName, &pItemCondition);
+    bool ClickMenuItem(HWND hwndNotepad, const wchar_t* topMenuName, const wchar_t* itemName)
+    {
+        HRESULT hr;
+        CComPtr<IUIAutomationElement> window;
+        if (SUCCEEDED(hr = uia->ElementFromHandle(hwndNotepad, &window))) {
 
-        CComPtr<IUIAutomationElement> pTargetItem;
-        hr = pCombo->FindFirstBuildCache(TreeScope_Descendants, pItemCondition, pCache, &pTargetItem);
-        if (FAILED(hr) || !pTargetItem) return E_FAIL;
+            CComPtr<IUIAutomationCondition> topCond;
+            if (SUCCEEDED(hr = uia->CreatePropertyCondition(UIA_NamePropertyId, CComVariant(topMenuName), &topCond))) {
 
-        CComPtr<IUIAutomationSelectionItemPattern> pSelectionPattern;
-        hr = pTargetItem->GetCachedPatternAs(UIA_SelectionItemPatternId, IID_PPV_ARGS(&pSelectionPattern));
-        if (SUCCEEDED(hr) && pSelectionPattern)
-            hr = pSelectionPattern->Select();
+                CComPtr<IUIAutomationElement> topMenu;
+                if (SUCCEEDED(hr = window->FindFirst(TreeScope_Descendants, topCond, &topMenu))) {
+
+                    // --- Open the top-level menu ---
+                    bool opened = false;
+
+                    CComPtr<IUIAutomationInvokePattern> invoke;
+                    if (SUCCEEDED(topMenu->GetCurrentPatternAs(UIA_InvokePatternId, IID_PPV_ARGS(&invoke))) && invoke) {
+                        opened = SUCCEEDED(invoke->Invoke());
+                    }
+                    if (!opened) {
+                        CComPtr<IUIAutomationExpandCollapsePattern> expand;
+                        if (SUCCEEDED(topMenu->GetCurrentPatternAs(UIA_ExpandCollapsePatternId, IID_PPV_ARGS(&expand))) && expand)
+                            opened = SUCCEEDED(expand->Expand());
+                    }
+                    if (!opened) {
+                        CComPtr<IUIAutomationLegacyIAccessiblePattern> legacy;
+                        if (SUCCEEDED(topMenu->GetCurrentPatternAs(UIA_LegacyIAccessiblePatternId, IID_PPV_ARGS(&legacy))) && legacy)
+                            opened = SUCCEEDED(legacy->DoDefaultAction());
+                    }
+                    if (!opened)
+                        return false;
+
+                    // --- Wait for the popup menu and find the target item ---
+                    CComPtr<IUIAutomationCondition> itemCond;
+                    if (SUCCEEDED(hr = uia->CreatePropertyCondition(UIA_NamePropertyId, CComVariant(itemName), &itemCond))) {
+
+                        CComPtr<IUIAutomationCondition> popupCond;
+                        if (SUCCEEDED(hr = uia->CreatePropertyCondition(UIA_ClassNamePropertyId, CComVariant(L"#32768"), &popupCond))) {
+
+                            CComPtr<IUIAutomationElement> popup;
+                            for (int i = 0; i < 40 && !popup; ++i)
+                            {
+                                CComPtr<IUIAutomationElement> desktop;
+                                uia->GetRootElement(&desktop);
+                                if (desktop)
+                                    desktop->FindFirst(TreeScope_Descendants, popupCond, &popup);
+
+                                if (popup)
+                                {
+                                    int      pid{};
+                                    DWORD ourPid{};
+                                    popup->get_CurrentProcessId(&pid);
+                                    GetWindowThreadProcessId(hwndNotepad, &ourPid);
+                                    if (static_cast<DWORD>(pid) != ourPid)
+                                        popup.Release();
+                                }
+
+                                if (!popup)
+                                    Sleep(25);
+                            }
+                            if (!popup)
+                                return false;
+
+                            CComPtr<IUIAutomationElement> targetItem;
+                            if (SUCCEEDED(hr = popup->FindFirst(TreeScope_Descendants, itemCond, &targetItem))) {
+
+                                // --- Invoke the menu item ---
+                                CComPtr<IUIAutomationInvokePattern> invoke2;
+                                if (SUCCEEDED(hr = targetItem->GetCurrentPatternAs(UIA_InvokePatternId, IID_PPV_ARGS(&invoke2)))) {
+                                    return SUCCEEDED(invoke2->Invoke());
+                                }
+                                CComPtr<IUIAutomationLegacyIAccessiblePattern> legacy2;
+                                if (SUCCEEDED(targetItem->GetCurrentPatternAs(UIA_LegacyIAccessiblePatternId, IID_PPV_ARGS(&legacy2))) && legacy2)
+                                {
+                                    return SUCCEEDED(legacy2->DoDefaultAction());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    HRESULT CancelPrint(HWND hwndPrint)
+    {
+        HRESULT hr;
+        CComPtr<IUIAutomationElement> rootEl;
+        if (SUCCEEDED(hr = uia->ElementFromHandle(hwndPrint, &rootEl))) {
+            CComPtr<IUIAutomationCondition> nameCond;
+            if (SUCCEEDED(hr = uia->CreatePropertyCondition(UIA_NamePropertyId, CComVariant(L"Cancel"), &nameCond))) {
+                CComPtr<IUIAutomationCondition> typeCond;
+                if (SUCCEEDED(hr = uia->CreatePropertyCondition(UIA_ControlTypePropertyId, CComVariant(UIA_ButtonControlTypeId), &typeCond))) {
+                    CComPtr<IUIAutomationCondition> andCond;
+                    if (SUCCEEDED(hr = uia->CreateAndCondition(nameCond, typeCond, &andCond))) {
+                        CComPtr<IUIAutomationElement> cancelBtn;
+                        if (SUCCEEDED(hr = rootEl->FindFirst(TreeScope_Descendants, andCond, &cancelBtn)) && !!cancelBtn) {
+                            CComPtr<IUIAutomationInvokePattern> invoke;
+                            if (SUCCEEDED(hr = cancelBtn->GetCurrentPatternAs(UIA_InvokePatternId, IID_IUIAutomationInvokePattern, reinterpret_cast<void**>(&invoke)))) {
+                                hr = invoke->Invoke();
+                            }
+                        }
+                    }
+                }
+            }
+        }
         return hr;
     }
 };
         UIA::~UIA() = default;
-        UIA::UIA          (                                             ) {        impl = std::make_unique<UIAimpl>(); }
-HRESULT UIA::Click        (HWND hwnd                                    ) { return impl->Click       (hwnd); }
-HRESULT UIA::SetText      (HWND hwnd, const wchar_t* text               ) { return impl->SetText     (hwnd, text); }
-HRESULT UIA::GetText      (HWND hwnd,       wchar_t* buffer, size_t size) { return impl->GetText     (hwnd, buffer, size); }
-HRESULT UIA::SelectByName (HWND hwnd, const wchar_t* itemName           ) { return impl->SelectByName(hwnd, itemName); }
+        UIA::UIA          (                                                              ) {        impl = std::make_unique<UIAimpl>(); }
+HRESULT UIA::Click        (HWND hwnd                                                     ) { return impl->Click        (hwnd); }
+HRESULT UIA::SetText      (HWND hwnd, const wchar_t* text                                ) { return impl->SetText      (hwnd, text); }
+HRESULT UIA::GetText      (HWND hwnd,       wchar_t* buffer, size_t size                 ) { return impl->GetText      (hwnd, buffer, size); }
+HRESULT UIA::SelectByName (HWND hwnd,                             const wchar_t* itemName) { return impl->SelectByName (hwnd, itemName); }
+bool    UIA::ClickMenu    (HWND hwnd, const wchar_t* topMenuName, const wchar_t* itemName) { return impl->ClickMenuItem(hwnd, topMenuName, itemName); }
+HRESULT UIA::CancelPrint  (HWND hwnd                                                     ) { return impl->CancelPrint  (hwnd); }
 
+
+#ifdef KEEP // was only used for logging (debugging GitHub Actions' failures)
 void GetDirectUIText(HWND hwndDialog, wchar_t* buf, int bufLen)
 {
     buf[0] = L'\0';
@@ -167,174 +278,4 @@ void GetDirectUIText(HWND hwndDialog, wchar_t* buf, int bufLen)
         }
     }
 }
-
-HRESULT SelectCustomComboBoxItem(HWND hComboBox, const wchar_t* itemName)
-{
-    CComPtr<IUIAutomation> pAutomation;
-    HRESULT hr = pAutomation.CoCreateInstance(CLSID_CUIAutomation);
-    if (FAILED(hr)) return hr;
-
-    CComPtr<IUIAutomationElement> pCombo;
-    hr = pAutomation->ElementFromHandle(hComboBox, &pCombo);
-    if (FAILED(hr)) return hr;
-
-    // Expand via UIA: triggers deferred item loading without a stray popup
-    CComPtr<IUIAutomationExpandCollapsePattern> pExpand;
-    pCombo->GetCurrentPatternAs(UIA_ExpandCollapsePatternId, IID_PPV_ARGS(&pExpand));
-    if (pExpand)
-        pExpand->Expand();
-    else
-        SendMessage(hComboBox, CB_SHOWDROPDOWN, TRUE, 0);
-
-    // Fetch name + SelectionItemPattern in one cross-process round-trip
-    CComPtr<IUIAutomationCacheRequest> pCache;
-    pAutomation->CreateCacheRequest(&pCache);
-    pCache->AddProperty(UIA_NamePropertyId);
-    pCache->AddPattern(UIA_SelectionItemPatternId);
-
-    CComVariant                     varItemName(itemName);
-    CComPtr<IUIAutomationCondition> pItemCondition;
-    pAutomation->CreatePropertyCondition(UIA_NamePropertyId, varItemName, &pItemCondition);
-
-    CComPtr<IUIAutomationElement> pTargetItem;
-    hr = pCombo->FindFirstBuildCache(TreeScope_Descendants, pItemCondition, pCache, &pTargetItem);
-    if (FAILED(hr) || !pTargetItem) return E_FAIL;
-
-    CComPtr<IUIAutomationSelectionItemPattern> pSelectionPattern;
-    hr = pTargetItem->GetCachedPatternAs(UIA_SelectionItemPatternId, IID_PPV_ARGS(&pSelectionPattern));
-    if (SUCCEEDED(hr) && pSelectionPattern)
-        hr = pSelectionPattern->Select();
-    return hr;
-}
-
-bool ClickMenuItemViaUIA(HWND hwndNotepad, const wchar_t* topMenuName, const wchar_t* itemName)
-{
-    CComPtr<IUIAutomation> uia;
-    if (FAILED(uia.CoCreateInstance(CLSID_CUIAutomation)))
-        return false;
-
-    CComPtr<IUIAutomationElement> window;
-    if (FAILED(uia->ElementFromHandle(hwndNotepad, &window)) || !window)
-        return false;
-
-    CComPtr<IUIAutomationCondition> topCond;
-    if (FAILED(uia->CreatePropertyCondition(UIA_NamePropertyId, CComVariant(topMenuName), &topCond)))
-        return false;
-
-    CComPtr<IUIAutomationElement> topMenu;
-    if (FAILED(window->FindFirst(TreeScope_Descendants, topCond, &topMenu)) || !topMenu)
-        return false;
-
-    // --- Open the top-level menu ---
-    bool opened = false;
-
-    CComPtr<IUIAutomationInvokePattern> invoke;
-    if (SUCCEEDED(topMenu->GetCurrentPatternAs(UIA_InvokePatternId, IID_PPV_ARGS(&invoke))) && invoke)
-    {
-        invoke->Invoke();
-        opened = true;
-    }
-    if (!opened)
-    {
-        CComPtr<IUIAutomationExpandCollapsePattern> expand;
-        if (SUCCEEDED(topMenu->GetCurrentPatternAs(UIA_ExpandCollapsePatternId, IID_PPV_ARGS(&expand))) && expand)
-        {
-            expand->Expand();
-            opened = true;
-        }
-    }
-    if (!opened)
-    {
-        CComPtr<IUIAutomationLegacyIAccessiblePattern> legacy;
-        if (SUCCEEDED(topMenu->GetCurrentPatternAs(UIA_LegacyIAccessiblePatternId, IID_PPV_ARGS(&legacy))) && legacy)
-        {
-            legacy->DoDefaultAction();
-            opened = true;
-        }
-    }
-    if (!opened)
-        return false;
-
-    // --- Wait for the popup menu and find the target item ---
-    CComPtr<IUIAutomationCondition> itemCond;
-    if (FAILED(uia->CreatePropertyCondition(UIA_NamePropertyId, CComVariant(itemName), &itemCond)))
-        return false;
-
-    CComPtr<IUIAutomationCondition> popupCond;
-    if (FAILED(uia->CreatePropertyCondition(UIA_ClassNamePropertyId, CComVariant(L"#32768"), &popupCond)))
-        return false;
-
-    CComPtr<IUIAutomationElement> popup;
-    for (int i = 0; i < 40 && !popup; ++i)
-    {
-        CComPtr<IUIAutomationElement> desktop;
-        if (SUCCEEDED(uia->GetRootElement(&desktop)) && desktop)
-            desktop->FindFirst(TreeScope_Descendants, popupCond, &popup);
-
-        if (popup)
-        {
-            int  pid{};
-            DWORD ourPid{};
-            popup->get_CurrentProcessId(&pid);
-            GetWindowThreadProcessId(hwndNotepad, &ourPid);
-            if (static_cast<DWORD>(pid) != ourPid)
-                popup.Release();
-        }
-
-        if (!popup)
-            Sleep(25);
-    }
-    if (!popup)
-        return false;
-
-    CComPtr<IUIAutomationElement> targetItem;
-    if (FAILED(popup->FindFirst(TreeScope_Descendants, itemCond, &targetItem)) || !targetItem)
-        return false;
-
-    // --- Invoke the menu item ---
-    CComPtr<IUIAutomationInvokePattern> invoke2;
-    if (SUCCEEDED(targetItem->GetCurrentPatternAs(UIA_InvokePatternId, IID_PPV_ARGS(&invoke2))) && invoke2)
-    {
-        invoke2->Invoke();
-        return true;
-    }
-    CComPtr<IUIAutomationLegacyIAccessiblePattern> legacy2;
-    if (SUCCEEDED(targetItem->GetCurrentPatternAs(UIA_LegacyIAccessiblePatternId, IID_PPV_ARGS(&legacy2))) && legacy2)
-    {
-        legacy2->DoDefaultAction();
-        return true;
-    }
-    return false;
-}
-
-void ClickPrintDialogCancel(HWND hwndPrint)
-{
-    CComPtr<IUIAutomation> uia;
-    if (FAILED(uia.CoCreateInstance(CLSID_CUIAutomation)))
-        return;
-
-    CComPtr<IUIAutomationElement> rootEl;
-    if (FAILED(uia->ElementFromHandle(hwndPrint, &rootEl)) || !rootEl)
-        return;
-
-    CComPtr<IUIAutomationCondition> nameCond;
-    uia->CreatePropertyCondition(UIA_NamePropertyId, CComVariant(L"Cancel"), &nameCond);
-
-    CComPtr<IUIAutomationCondition> typeCond;
-    uia->CreatePropertyCondition(UIA_ControlTypePropertyId, CComVariant(UIA_ButtonControlTypeId), &typeCond);
-
-    CComPtr<IUIAutomationCondition> andCond;
-    uia->CreateAndCondition(nameCond, typeCond, &andCond);
-
-    CComPtr<IUIAutomationElement> cancelBtn;
-    rootEl->FindFirst(TreeScope_Descendants, andCond, &cancelBtn);
-    if (!cancelBtn)
-        return;
-
-    CComPtr<IUIAutomationInvokePattern> invoke;
-    cancelBtn->GetCurrentPatternAs( UIA_InvokePatternId, IID_IUIAutomationInvokePattern, reinterpret_cast<void**>(&invoke));
-    if (!invoke)
-        return;
-
-    invoke->Invoke();
-}
+#endif

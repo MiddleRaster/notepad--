@@ -2,11 +2,6 @@
 #ifndef UIA_H
 #define UIA_H
 
-bool ClickMenuItemViaUIA(HWND hwndNotepad, const wchar_t* topMenuName, const wchar_t* itemName);
-void ClickPrintDialogCancel(HWND hwndPrint);
-HRESULT SelectCustomComboBoxItem(HWND comboBox, const wchar_t* itemName);
-void GetDirectUIText(HWND hwndDialog, wchar_t* buf, int bufLen);
-
 class UIAimpl;
 class UIA
 {
@@ -16,8 +11,10 @@ public:
    ~UIA();
     HRESULT Click       (HWND hwnd);
     HRESULT SetText     (HWND hEdit,     const wchar_t* text);
-    HRESULT GetText     (HWND hEdit,           wchar_t* buffer, size_t size);
-    HRESULT SelectByName(HWND hComboBox, const wchar_t* itemName);
+    HRESULT GetText     (HWND hEdit,           wchar_t* text, size_t size);
+    HRESULT SelectByName(HWND hComboBox,                             const wchar_t* itemName);
+    bool    ClickMenu   (HWND hNotepad,  const wchar_t* topMenuName, const wchar_t* itemName);
+    HRESULT CancelPrint (HWND hwndPrint);
 };
 
 #endif

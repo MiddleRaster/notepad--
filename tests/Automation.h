@@ -399,7 +399,8 @@ namespace TestAutomation
             Assert::AreNotEqual(nullptr, comboBox, "virtual comboBox not found");
 
             HRESULT hr = S_OK;
-            Poll::Until(1s, 10ms, [&]() { return S_OK == (hr = SelectCustomComboBoxItem(comboBox, encoding.c_str())); });
+            UIA uia;
+            Poll::Until(1s, 10ms, [&]() { return SUCCEEDED(hr = uia.SelectByName(comboBox, encoding.c_str())); });
             Assert::AreEqual(S_OK, hr, "UIA automation failed to select comboBox item");
         }
     };
@@ -481,12 +482,8 @@ namespace TestAutomation
         HWND printDlg;
         void Cancel()
         {
-         // PostMessage(printDlg, WM_CLOSE, 0, 0); // now using UIA, because print dialog is no longer the classic win32 dialogbox            
-            Poll::While(90s, 50ms, [this]()
-                {
-                    ClickPrintDialogCancel(printDlg);
-                    return IsWindowVisible(printDlg);
-                });
+            UIA uia;
+            Poll::While(90s, 50ms, [&]() { uia.CancelPrint(printDlg); return IsWindowVisible(printDlg); });
             Assert::IsFalse(IsWindowVisible(printDlg), "print dialog should have been dismissed");
         }
     };
@@ -631,7 +628,7 @@ namespace TestAutomation
         }
         void ClickMenuItem(const std::wstring& toplevel, const std::wstring& itemName)
         {
-            ClickMenuItemViaUIA(hwnd, toplevel.c_str(), itemName.c_str());
+            UIA().ClickMenu(hwnd, toplevel.c_str(), itemName.c_str());
         }
         bool IsMenuItemChecked(UINT id)
         {
