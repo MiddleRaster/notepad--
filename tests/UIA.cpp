@@ -35,10 +35,40 @@ public:
             el->SetFocus();
             Sleep(50);
 
+
+#ifdef KEEP
+            for (const wchar_t* p=text; *p; ++p)
+            {
+                INPUT ch[2]{};
+                ch[0].type       = INPUT_KEYBOARD;
+                ch[0].ki.wScan   = *p;
+                ch[0].ki.dwFlags = KEYEVENTF_UNICODE;
+                ch[1]            = ch[0];
+                ch[1].ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
+                SendInput(2, ch, sizeof(INPUT));
+                Sleep(10);
+            }
+#endif
             CComPtr<IUIAutomationValuePattern> valuePattern;
             if (SUCCEEDED(hr = el->GetCurrentPatternAs(UIA_ValuePatternId, IID_PPV_ARGS(&valuePattern))))
                 hr = valuePattern->SetValue(CComBSTR(text));
         }
+
+        SetForegroundWindow(GetAncestor(hwnd /*Edit*/, GA_ROOT));
+        SetFocus(hwnd /*Edit*/);
+
+        // Select all via SendInput Ctrl+A to trigger IFileSaveDialog's internal something-or-other
+        INPUT inputs[4]{};
+        inputs[0].type       = INPUT_KEYBOARD;
+        inputs[0].ki.wVk     = VK_CONTROL;
+        inputs[1].type       = INPUT_KEYBOARD;
+        inputs[1].ki.wVk     = 'A';
+        inputs[2]            = inputs[1];
+        inputs[2].ki.dwFlags = KEYEVENTF_KEYUP;
+        inputs[3]            = inputs[0];
+        inputs[3].ki.dwFlags = KEYEVENTF_KEYUP;
+        SendInput(4, inputs, sizeof(INPUT));
+
         return hr;
     }
     HRESULT GetText(HWND hwnd, wchar_t* buffer, size_t size)
