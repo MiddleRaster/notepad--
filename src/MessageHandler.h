@@ -254,7 +254,7 @@ public:
         EnableMenuItem(hPopup, IDM_GOTO,     MF_BYCOMMAND | (!wordWrap    ? MF_ENABLED : MF_GRAYED));
     }
     void Handle_EN_CHANGE(HWND) { undo.UpdateUndo(edit); }
-    void Handle_Timer    (HWND) { statusBar.UpdateStatusBar(edit); }
+    void Handle_Timer    (HWND) { statusBar.UpdateStatusBar(edit, encoding); }
     void Handle_Undo     (HWND) { undo.Apply(edit); }
     void Handle_Copy     (HWND) { SendMessage(edit, WM_COPY,   0,  0); } // let edit field's implementation do the work
     void Handle_Cut      (HWND) { SendMessage(edit, WM_CUT,    0,  0); } // let edit field's implementation do the work

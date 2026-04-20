@@ -9,13 +9,14 @@ class UIA
 public:
     UIA();
    ~UIA();
-    HRESULT Click       (HWND hwnd);
-    HRESULT SetText     (HWND hEdit,     const wchar_t* text);
-    HRESULT GetText     (HWND hEdit,           wchar_t* text, size_t size);
-    HRESULT SelectByName(HWND hComboBox,                             const wchar_t* itemName);
-    bool    ClickMenu   (HWND hNotepad,  const wchar_t* topMenuName, const wchar_t* itemName);
-    HRESULT CancelPrint (HWND hwndPrint);
-    HRESULT GetSelected (HWND hComboBox, int& index);
+    HRESULT Click           (HWND hwnd);
+    HRESULT SetText         (HWND hEdit,     const wchar_t* text);
+    HRESULT GetText         (HWND hEdit,           wchar_t* text, size_t size);
+    HRESULT SelectByName    (HWND hComboBox,                             const wchar_t* itemName);
+    bool    ClickMenu       (HWND hNotepad,  const wchar_t* topMenuName, const wchar_t* itemName);
+    HRESULT CancelPrint     (HWND hwndPrint);
+    HRESULT GetSelected     (HWND hComboBox, int& index);
+    HRESULT GetStatusBarText(HWND hStatusBar,      wchar_t* buffer, size_t size);
 };
 
 #endif

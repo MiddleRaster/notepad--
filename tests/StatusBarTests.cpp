@@ -18,8 +18,8 @@ Test StatusBarTests[] = {
             TestAutomation::MainWindow main;
 
             auto statusBar = main.GetStatusBar();
-            Poll::Until(1s, 1ms, [&]() { return statusBar.GetText() != L""; });
-            Assert::AreEqual(L"Ln 0, Col 0", statusBar.GetText());
+            Poll::Until(1s, 1ms, [&]() { return statusBar.GetText() == L"Ln 0, Col 0 | ANSI"; });
+            Assert::AreEqual(L"Ln 0, Col 0 | ANSI", statusBar.GetText());
             Assert::IsTrue(statusBar.IsVisible(), "status bar should be visible by default");
 
             main.ExitViaMenu();
@@ -35,8 +35,8 @@ Test StatusBarTests[] = {
             edit.ClearDirtyFlag();
 
             auto statusBar = main.GetStatusBar();
-            Poll::Until(1s, 1ms, [&]() { return statusBar.GetText() == L"Ln 0, Col 20"; });
-            Assert::AreEqual(L"Ln 0, Col 20", statusBar.GetText());
+            Poll::Until(1s, 1ms, [&]() { return statusBar.GetText() == L"Ln 0, Col 20 | ANSI"; });
+            Assert::AreEqual(L"Ln 0, Col 20 | ANSI", statusBar.GetText());
 
             main.ExitViaMenu();
         }
@@ -51,6 +51,38 @@ Test StatusBarTests[] = {
             Assert::IsFalse(statusBar.IsVisible(), "status bar should be invisible when wordwrap is on");
 
             main.ExitViaMenu();
+        }
+    },
+    { std::string("StatusBar shows current encoding"), []()
+        {
+            static const wchar_t text[] = L"Here is some Unicode text";
+            static const BYTE    bom [] = {0xFF, 0xFE};
+
+            std::filesystem::path path = FileUtils::GetTempFilename(L"Unicode.txt");
+            HANDLE hFile = CreateFileW(path.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+            Assert::AreNotEqual(INVALID_HANDLE_VALUE, hFile, "could not open temp file");
+
+            struct FileDeleter
+            {
+                std::filesystem::path path;
+                FileDeleter(const std::filesystem::path& path) : path(path) {}
+               ~FileDeleter() { FileUtils::DeleteFileWithRetry(path); }
+            } fd(path);
+
+            DWORD written;
+            WriteFile(hFile, bom,  sizeof(bom ), &written, nullptr);
+            WriteFile(hFile, text, sizeof(text), &written, nullptr);
+            CloseHandle(hFile);
+            Assert::AreEqual(sizeof(text), written, "could not write all wchars");
+
+            TestAutomation::MainWindow main(path);
+            auto statusBar = main.GetStatusBar();
+            Poll::Until(1s, 1ms, [&]() { return statusBar.GetText() == L"Ln 0, Col 0 | Unicode"; });
+            auto statusBarText = statusBar.GetText();
+
+            main.ExitViaMenu();
+
+            Assert::AreEqual(L"Ln 0, Col 0 | Unicode", statusBarText, "statusBar text should have included encoding");
         }
     },
 };

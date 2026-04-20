@@ -741,9 +741,9 @@ namespace TestAutomation
         bool       IsVisible() const { return !!::IsWindowVisible(statusBar); }
         std::wstring GetText() const
         {
-            wchar_t buf[256] = {0};
-            SendMessage(statusBar, WM_GETTEXT, 256, (LPARAM)buf);
-            return buf;
+            wchar_t text[256]{};
+            UIA().GetStatusBarText(statusBar, text, 256);
+            return text;
         }
     };
 

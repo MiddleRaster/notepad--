@@ -251,18 +251,50 @@ public:
         }
         return hr;
     }
+    HRESULT GetStatusBarText(HWND hStatusBar, wchar_t* buffer, size_t size)
+    {
+        if (size <= 0) return E_INVALIDARG;
+        buffer[0] = L'\0';
+
+        HRESULT hr ;
+        CComPtr<IUIAutomationElement> pBar;
+        if (SUCCEEDED(hr = uia->ElementFromHandle(hStatusBar, &pBar))) {
+            CComPtr<IUIAutomationCondition> pTrue;
+            if (SUCCEEDED(hr = uia->CreateTrueCondition(&pTrue))) {
+                CComPtr<IUIAutomationElementArray> pParts;
+                if (SUCCEEDED(hr = pBar->FindAll(TreeScope_Children, pTrue, &pParts))) {
+                    CComPtr<IUIAutomationElement> pPart0;
+                    if (SUCCEEDED(hr = pParts->GetElement(0, &pPart0))) {
+                        CComPtr<IUIAutomationElement> pPart1;
+                        if (SUCCEEDED(hr = pParts->GetElement(1, &pPart1))) {
+                            CComBSTR name0;
+                            if (SUCCEEDED(hr = pPart0->get_CurrentName(&name0))) {
+                                CComBSTR name1;
+                                if (SUCCEEDED(hr = pPart1->get_CurrentName(&name1))) {
+                                    wcsncpy_s(buffer, size, name0, name0.Length());
+                                    wcsncat_s(buffer, size, L" | ", 3);
+                                    wcsncat_s(buffer, size, name1, name1.Length());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return hr;
+    }
 };
 
         UIA::~UIA() = default;
-        UIA::UIA          (                                                              ) {        impl = std::make_unique<UIAimpl>(); }
-HRESULT UIA::Click        (HWND hwnd                                                     ) { return impl->Click        (hwnd); }
-HRESULT UIA::SetText      (HWND hwnd, const wchar_t* text                                ) { return impl->SetText      (hwnd, text); }
-HRESULT UIA::GetText      (HWND hwnd,       wchar_t* buffer, size_t size                 ) { return impl->GetText      (hwnd, buffer, size); }
-HRESULT UIA::SelectByName (HWND hwnd,                             const wchar_t* itemName) { return impl->SelectByName (hwnd, itemName); }
-bool    UIA::ClickMenu    (HWND hwnd, const wchar_t* topMenuName, const wchar_t* itemName) { return impl->ClickMenuItem(hwnd, topMenuName, itemName); }
-HRESULT UIA::CancelPrint  (HWND hwnd                                                     ) { return impl->CancelPrint  (hwnd); }
-HRESULT UIA::GetSelected  (HWND hwnd, int& index                                         ) { return impl->GetSelected  (hwnd, index); }
-
+        UIA::UIA             (                                                              ) {        impl = std::make_unique<UIAimpl>(); }
+HRESULT UIA::Click           (HWND hwnd                                                     ) { return impl->Click           (hwnd); }
+HRESULT UIA::SetText         (HWND hwnd, const wchar_t* text                                ) { return impl->SetText         (hwnd, text); }
+HRESULT UIA::GetText         (HWND hwnd,       wchar_t* buffer, size_t size                 ) { return impl->GetText         (hwnd, buffer, size); }
+HRESULT UIA::SelectByName    (HWND hwnd,                             const wchar_t* itemName) { return impl->SelectByName    (hwnd, itemName); }
+bool    UIA::ClickMenu       (HWND hwnd, const wchar_t* topMenuName, const wchar_t* itemName) { return impl->ClickMenuItem   (hwnd, topMenuName, itemName); }
+HRESULT UIA::CancelPrint     (HWND hwnd                                                     ) { return impl->CancelPrint     (hwnd); }
+HRESULT UIA::GetSelected     (HWND hwnd, int& index                                         ) { return impl->GetSelected     (hwnd, index); }
+HRESULT UIA::GetStatusBarText(HWND hwnd,       wchar_t* buffer, size_t size                 ) { return impl->GetStatusBarText(hwnd, buffer, size); }
 
 #ifdef KEEP // was only used for logging (debugging GitHub Actions' failures)
 void GetDirectUIText(HWND hwndDialog, wchar_t* buf, int bufLen)
