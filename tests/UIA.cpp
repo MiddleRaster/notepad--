@@ -229,7 +229,30 @@ public:
         }
         return hr;
     }
+    HRESULT GetSelected(HWND hComboBox, int& selectedIndex)
+    {
+        HRESULT hr;
+        CComPtr<IUIAutomationElement> pCombo;
+        if (SUCCEEDED(hr = uia->ElementFromHandle(hComboBox, &pCombo)))
+        {
+            CComPtr<IUIAutomationValuePattern> pValue;
+            if (SUCCEEDED(hr = pCombo->GetCurrentPatternAs(UIA_ValuePatternId, IID_PPV_ARGS(&pValue))))
+            {
+                CComBSTR selectedName;
+                if (SUCCEEDED(hr = pValue->get_CurrentValue(&selectedName)))
+                {
+                         if (wcscmp(selectedName, L"ANSI"              ) == 0)  selectedIndex = 0;
+                    else if (wcscmp(selectedName, L"Unicode"           ) == 0)  selectedIndex = 1;
+                    else if (wcscmp(selectedName, L"Unicode big endian") == 0)  selectedIndex = 2;
+                    else if (wcscmp(selectedName, L"UTF-8 with BOM"    ) == 0)  selectedIndex = 3;
+                    else if (wcscmp(selectedName, L"UTF-8 no BOM"      ) == 0)  selectedIndex = 4;
+                }
+            }
+        }
+        return hr;
+    }
 };
+
         UIA::~UIA() = default;
         UIA::UIA          (                                                              ) {        impl = std::make_unique<UIAimpl>(); }
 HRESULT UIA::Click        (HWND hwnd                                                     ) { return impl->Click        (hwnd); }
@@ -238,6 +261,7 @@ HRESULT UIA::GetText      (HWND hwnd,       wchar_t* buffer, size_t size        
 HRESULT UIA::SelectByName (HWND hwnd,                             const wchar_t* itemName) { return impl->SelectByName (hwnd, itemName); }
 bool    UIA::ClickMenu    (HWND hwnd, const wchar_t* topMenuName, const wchar_t* itemName) { return impl->ClickMenuItem(hwnd, topMenuName, itemName); }
 HRESULT UIA::CancelPrint  (HWND hwnd                                                     ) { return impl->CancelPrint  (hwnd); }
+HRESULT UIA::GetSelected  (HWND hwnd, int& index                                         ) { return impl->GetSelected  (hwnd, index); }
 
 
 #ifdef KEEP // was only used for logging (debugging GitHub Actions' failures)

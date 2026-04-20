@@ -403,6 +403,20 @@ namespace TestAutomation
             Poll::Until(1s, 10ms, [&]() { return SUCCEEDED(hr = uia.SelectByName(comboBox, encoding.c_str())); });
             Assert::AreEqual(S_OK, hr, "UIA automation failed to select comboBox item");
         }
+        int GetEncoding() const
+        {
+            HWND comboBox = nullptr; // this "virtual combobox" takes a while to populate...
+            Poll::While(1s,  1ms, [&]() { return nullptr == (comboBox = WindowFinder::FindDesiredChildWindow(saveAs, WindowFinder::Has::ClassName{L"ComboBox"}, WindowFinder::Is::Nth{3})); });
+            Assert::AreNotEqual(nullptr, comboBox, "virtual comboBox not found");
+
+            UIA uia;
+            HRESULT hr = S_OK;
+            int index  = -1;
+            Poll::Until(1s, 10ms, [&]() {  return SUCCEEDED(hr = uia.GetSelected(comboBox, index)); });
+            Assert::AreEqual   (S_OK,  hr, "UIA automation failed to get selected comboBox index");
+            Assert::AreNotEqual(-1, index, "UIA automation failed to get selected comboBox index");
+            return index;
+        }
     };
 
     class EditField

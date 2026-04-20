@@ -376,4 +376,18 @@ Test FileSaveAsTests[] = {
             Assert::AreEqual(L"This is some text", Read::File(pathUTF16BE),     "UTF-16BE encoding is wrong");
         }
     },
+    { std::string("SaveAs defaults to encoding of loaded file"),[]()
+        {
+            auto path = FileUtils::CreateTempUtf8File(L"A UTF-8 file.txt", L"This is a UTF-8 file.");
+
+            TestAutomation::MainWindow main(path);
+            auto saveAs = main.SaveAs();
+            auto encoding = saveAs.GetEncoding();
+            main.ExitViaMenu();
+
+            FileUtils::DeleteFileWithRetry(path);
+
+            Assert::AreEqual(3, encoding, "default encoding should be the encoding of the loaded file");
+        }
+    },
 };

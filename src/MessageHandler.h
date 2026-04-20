@@ -40,6 +40,7 @@ class MessageHandler
 
     HWND edit{};
     std::filesystem::path FilePath{};
+    FileIO::Encoding encoding = FileIO::Encoding::eANSI;
     Undo undo;
 
     HWND hDlgFind = nullptr;
@@ -95,7 +96,7 @@ class MessageHandler
         } args(&argc);
         if ((args.argv == nullptr) || (argc <= 1))
             return;
-        if (!FileIO::LoadFileToEdit(hWnd, edit, args.argv[1]))
+        if (!FileIO::LoadFileToEdit(hWnd, edit, args.argv[1], encoding))
             MessageBoxW(hWnd, L"Failed to open file.", L"Notepad--", MB_OK | MB_ICONERROR);
         FilePath = args.argv[1];
     }
@@ -169,12 +170,12 @@ public:
         if (!titled)
             Handle_FileSaveAs(hWnd);
         else
-            FileIO::SaveFile(hWnd, edit, FilePath.c_str(), FilePath);
+            FileIO::SaveFile(hWnd, edit, FilePath.c_str(), FilePath, encoding);
     }
 
     void Handle_FileSaveAs(HWND hWnd)
     {
-        FileIO::FileSaveAs(hWnd, edit, FilePath);
+        FileIO::FileSaveAs(hWnd, edit, FilePath, encoding);
     }
 
     void Handle_Print(HWND hWnd)
@@ -228,7 +229,7 @@ public:
         if (GetOpenFileNameW(&ofn))
         {
             FilePath = filePath;
-            if (!FileIO::LoadFileToEdit(hWnd, edit, filePath))
+            if (!FileIO::LoadFileToEdit(hWnd, edit, filePath, encoding))
                 MessageBoxW(hWnd, L"Failed to open file.", L"Notepad--", MB_OK | MB_ICONERROR);
         }
     }

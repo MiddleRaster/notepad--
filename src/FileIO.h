@@ -182,7 +182,7 @@ private:
     };
 
 public:
-    static bool LoadFileToEdit(HWND hWnd, HWND edit, const wchar_t* path)
+    static bool LoadFileToEdit(HWND hWnd, HWND edit, const wchar_t* path, Encoding& encoding)
     {
         bool ret = false;
         HANDLE file = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -199,7 +199,7 @@ public:
 
                     std::wstring wide;
                     auto [encoded, hasBom] = EncodedReaders::DetectEncoding(bytes);
-                    switch (encoded)
+                    switch (encoding = encoded)
                     {
                         default:
                         case Encoding::eUTF8:
@@ -326,7 +326,7 @@ public:
         }
     }
     
-    static void SaveFile(HWND hWnd, HWND edit, const wchar_t* filePath, std::filesystem::path& FilePath, Encoding encoding=Encoding::eANSI)
+    static void SaveFile(HWND hWnd, HWND edit, const wchar_t* filePath, std::filesystem::path& FilePath, Encoding encoding)
     {
         if (SaveEditTextToFile(edit, filePath, encoding))
         {
@@ -342,7 +342,7 @@ public:
             MessageBoxW(hWnd, L"Failed to save file.", L"Notepad--", MB_OK | MB_ICONERROR);
     }
 
-    static void FileSaveAs(HWND hWnd, HWND edit, std::filesystem::path& FilePath)
+    static void FileSaveAs(HWND hWnd, HWND edit, std::filesystem::path& FilePath, Encoding& encoding)
     {
         struct COM
         {
@@ -365,7 +365,7 @@ public:
             pCustomize->AddControlItem  (IDC_ENCODING_COMBO, Encoding::eUNICODEbe, L"Unicode big endian");
             pCustomize->AddControlItem  (IDC_ENCODING_COMBO, Encoding::eUTF8,      L"UTF-8 with BOM");
             pCustomize->AddControlItem  (IDC_ENCODING_COMBO, Encoding::eUTF8noBOM, L"UTF-8 no BOM");
-            pCustomize->SetSelectedControlItem(IDC_ENCODING_COMBO, 0);
+            pCustomize->SetSelectedControlItem(IDC_ENCODING_COMBO, encoding);
             pCustomize->EndVisualGroup();
         }
 
@@ -383,8 +383,7 @@ public:
         HRESULT hr = pDlg->Show(hWnd);
         if (SUCCEEDED(hr))
         {
-            Encoding encoding = Encoding::eANSI;
-            DWORD selection   = 0;
+            DWORD selection  = 0;
             if (SUCCEEDED(hr = pCustomize->GetSelectedControlItem(IDC_ENCODING_COMBO, &selection)))
                 encoding = static_cast<Encoding>(selection);
 

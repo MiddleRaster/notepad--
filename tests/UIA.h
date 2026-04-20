@@ -15,6 +15,7 @@ public:
     HRESULT SelectByName(HWND hComboBox,                             const wchar_t* itemName);
     bool    ClickMenu   (HWND hNotepad,  const wchar_t* topMenuName, const wchar_t* itemName);
     HRESULT CancelPrint (HWND hwndPrint);
+    HRESULT GetSelected (HWND hComboBox, int& index);
 };
 
 #endif
