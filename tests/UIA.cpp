@@ -34,24 +34,12 @@ public:
         {
             el->SetFocus();
             Sleep(50);
-
-
 #ifdef KEEP
-            for (const wchar_t* p=text; *p; ++p)
-            {
-                INPUT ch[2]{};
-                ch[0].type       = INPUT_KEYBOARD;
-                ch[0].ki.wScan   = *p;
-                ch[0].ki.dwFlags = KEYEVENTF_UNICODE;
-                ch[1]            = ch[0];
-                ch[1].ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
-                SendInput(2, ch, sizeof(INPUT));
-                Sleep(10);
-            }
-#endif
+
             CComPtr<IUIAutomationValuePattern> valuePattern;
             if (SUCCEEDED(hr = el->GetCurrentPatternAs(UIA_ValuePatternId, IID_PPV_ARGS(&valuePattern))))
                 hr = valuePattern->SetValue(CComBSTR(text));
+#endif
         }
 
         SetForegroundWindow(GetAncestor(hwnd /*Edit*/, GA_ROOT));
@@ -68,6 +56,18 @@ public:
         inputs[3]            = inputs[0];
         inputs[3].ki.dwFlags = KEYEVENTF_KEYUP;
         SendInput(4, inputs, sizeof(INPUT));
+
+        for (const wchar_t* p=text; *p; ++p)
+        {
+            INPUT ch[2]{};
+            ch[0].type       = INPUT_KEYBOARD;
+            ch[0].ki.wScan   = *p;
+            ch[0].ki.dwFlags = KEYEVENTF_UNICODE;
+            ch[1]            = ch[0];
+            ch[1].ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
+            SendInput(2, ch, sizeof(INPUT));
+            Sleep(10);
+        }
 
         return hr;
     }
