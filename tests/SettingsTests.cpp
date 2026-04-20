@@ -108,7 +108,12 @@ Test SettingsTests[] = {
                 TestAutomation::MainWindow main;
                 main.GetMenu().GetFormatMenu().SelectMenuItem(IDM_FONT);
                 auto font = main.FindExistingChooseFontDialog();
-                font.SetFontSize(20);
+
+                Poll::Until(1s, 1ms, [&]()  {
+                                                font.SetFontSize(20);
+                                                try { return font.GetFontSize() == 20; }
+                                                catch (...) { return false; }
+                                            });
                 Poll::Until(1s, 1ms, [&]()  {
                                                 font.SetFont(L"Consolas");
                                                 return font.GetFontName() == L"Consolas";
@@ -121,7 +126,6 @@ Test SettingsTests[] = {
             }
             {
                 TestAutomation::MainWindow main;
-            //  main.GetMenu().GetFormatMenu().SelectMenuItem(IDM_FONT);
 
                 HDC  hdc = ::GetDC(nullptr);
                 int  dpiY = ::GetDeviceCaps(hdc, LOGPIXELSY);
