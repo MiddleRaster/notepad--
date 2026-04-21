@@ -4,6 +4,7 @@ I liked the old Notepad better, so recreating it here.
 
 It's a work-in-progress:
 
+2026-04-20 - current encoding displayed in status bar, and tests  
 2026-04-19 - reading and writing with encodings (UTF-8, ANSI, etc), and tests  
 2026-04-12 - load and save settings (placement, font, etc.), and tests  
 2026-04-06 - status bar, and tests  
