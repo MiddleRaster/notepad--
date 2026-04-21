@@ -61,10 +61,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE /*hPrevInstance*/, _In_ LPWSTR /*lpCmdLine*/, _In_ int nCmdShow)
 {
-    WCHAR szTitle      [MAX_LOADSTRING]; // The title bar text
-    WCHAR szWindowClass[MAX_LOADSTRING]; // the main window class name
-    LoadStringW(hInstance, IDS_APP_TITLE_NOTEPAD, szTitle, MAX_LOADSTRING);
-    LoadStringW(hInstance, IDC_NOTEPAD,     szWindowClass, MAX_LOADSTRING);
+    WCHAR szTitle      [MAX_LOADSTRING];    LoadStringW(hInstance, IDS_APP_TITLE_NOTEPAD, szTitle, MAX_LOADSTRING);
+    WCHAR szWindowClass[MAX_LOADSTRING];    wcsncpy_s(szWindowClass, MAX_LOADSTRING, L"Notepad--", 9);
 
     WNDCLASSEXW wcex;
     wcex.cbSize        = sizeof(WNDCLASSEX);

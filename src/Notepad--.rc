@@ -168,7 +168,6 @@ END
 
 STRINGTABLE
 BEGIN
-   IDC_NOTEPAD                 "SRC"
    IDS_APP_TITLE_NOTEPAD       "Untitled"
 END
 
