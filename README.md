@@ -2,7 +2,15 @@
 
 I liked the old Notepad better, so recreating it here.
 
-It's a work-in-progress:
+It's a work-in-progress, but mostly done. 
+
+Things not done, but not worth implementing IMO:
+1. Page layout for printing
+2. Help
+3. Inserting time/date
+
+If you find a missing feature or bugs, let me know.
+
 
 2026-04-20 - current encoding displayed in status bar, and tests  
 2026-04-19 - reading and writing with encodings (UTF-8, ANSI, etc), and tests  
