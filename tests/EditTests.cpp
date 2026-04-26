@@ -395,4 +395,29 @@ Test EditTests[] = {
             }
         }
     },
+    { std::string("Can paste more than 65k of text"), []()
+        {
+            // create 1024 lines of 1024 chars
+            std::wstring text;
+            for(int i=0; i<1024; ++i)
+            {
+                auto line = std::to_wstring(i);
+                text     += line + std::wstring(1023 - line.size(), L' ') + L'\n';
+            }
+            TestAutomation::Clipboard::SetClipboardText(text);
+
+            TestAutomation::MainWindow main;
+            main.GetMenu().GetEditMenu().SelectMenuItem(IDM_PASTE);
+
+            auto edit = main.GetEditField();
+            Poll::Until(1s, 1ms, [&]() { return edit.GetText() == text; });
+            edit.ClearDirtyFlag(); // after text is completely set
+            Poll::While(1s, 1ms, [&]() { return edit.IsDirty(); });
+
+            auto txt = edit.GetText();
+            main.ExitViaMenu();
+
+            Assert::AreEqual(text.length(), txt.length(), "text set should match text gotten");
+        }
+    },
 };

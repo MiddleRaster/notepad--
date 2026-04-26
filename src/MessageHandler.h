@@ -62,6 +62,8 @@ class MessageHandler
             SetWindowLongPtrW(hWnd, GWLP_USERDATA, 0);
             return -1;
         }
+        SendMessage(edit, EM_LIMITTEXT, 0x7FFFFFFE, 0); // set text limit to maximum value
+
         SetWindowLongPtrW(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
         Font::InitializeFont_OnlyCallOnNewlyCreatedEditWindows(edit);
 
@@ -402,6 +404,7 @@ public:
         // re-create edit window
         DestroyWindow(edit);
         edit = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD | WS_VISIBLE | WS_VSCROLL |  ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | style, 0, 0, 0, 0, hWnd, reinterpret_cast<HMENU>(IDC_EDITFIELD), GetModuleHandle(nullptr), nullptr);
+        SendMessage(edit, EM_LIMITTEXT, 0x7FFFFFFE, 0); // set text limit to maximum value
 
         Font::InitializeFont_OnlyCallOnNewlyCreatedEditWindows(edit);
         statusBar.ResizeStatusBar(hWnd);
