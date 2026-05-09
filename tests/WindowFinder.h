@@ -40,6 +40,14 @@ namespace WindowFinder
                 GetClassNameW(hwnd, cls, static_cast<int>(std::size(cls)));
                 return std::wcscmp(cls, className.c_str()) == 0;
             }
+            ClassName(const std::wstring className) : className(className) {}
+
+            ClassName(                            )          = delete;
+            ClassName(           const ClassName& ) noexcept = default;
+            ClassName(                 ClassName&&) noexcept = default;
+            ClassName& operator=(const ClassName&)           = delete;
+            ClassName& operator=(      ClassName&&)          = delete;
+           ~ClassName()                             noexcept = default;
         };
         struct Caption
         {
@@ -50,6 +58,14 @@ namespace WindowFinder
                 GetWindowText(hwnd, cap, static_cast<int>(std::size(cap)));
                 return std::wcscmp(cap, caption.c_str()) == 0;
             }
+            Caption(const std::wstring& caption) : caption(caption) {}
+
+            Caption(                          )          = delete;
+            Caption(           const Caption& ) noexcept = default;
+            Caption(                 Caption&&) noexcept = default;
+            Caption& operator=(const Caption&)           = delete;
+            Caption& operator=(      Caption&&)          = delete;
+           ~Caption()                           noexcept = default;
         };
         struct NotStyle
         {
