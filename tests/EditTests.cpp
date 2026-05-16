@@ -414,10 +414,13 @@ Test EditTests[] = {
             edit.ClearDirtyFlag(); // after text is completely set
             Poll::While(1s, 1ms, [&]() { return edit.IsDirty(); });
 
-            auto txt = edit.GetText();
+            auto txt   = edit.GetText();
+            auto lines = edit.GetLineCount();
             main.ExitViaMenu();
 
             Assert::AreEqual(text.length(), txt.length(), "text set should match text gotten");
+            Assert::AreEqual(text,          txt,          "text set should match text gotten");
+            Assert::AreEqual(1025,          lines,        "number of lines should match");
         }
     },
 };

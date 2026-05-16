@@ -477,6 +477,7 @@ namespace TestAutomation
             newFontName = lf.lfFaceName;
             newFontSize = lf.lfHeight;
         }
+        auto GetLineCount() const { return SendMessageW(edit, EM_GETLINECOUNT, 0, 0); }
     };
 
     class ModalMessageBox
